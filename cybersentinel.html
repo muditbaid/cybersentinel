@@ -8,1290 +8,407 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --secondary: #8b5cf6;
-            --accent: #ec4899;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --light: #f8fafc;
-            --dark: #1e293b;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            min-height: 100vh;
-        }
-        .screen {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-            min-height: calc(100vh - 4rem);
-        }
-        .screen.active {
-            display: flex;
-            opacity: 1;
-        }
-        .card {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-        .btn-secondary {
-            background: white;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-        .btn-secondary:hover {
-            background: #f0f7ff;
-            transform: translateY(-2px);
-        }
-        .progress-bar {
-            height: 0.5rem;
-            border-radius: 1rem;
-            background: #e2e8f0;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            border-radius: 1rem;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-            transition: width 0.5s ease;
-        }
-        .score-circle {
-            width: 6rem;
-            height: 6rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            position: relative;
-        }
-        .score-circle::after {
-            content: '';
-            position: absolute;
-            top: -0.5rem;
-            right: -0.5rem;
-            bottom: -0.5rem;
-            left: -0.5rem;
-            border-radius: 50%;
-            border: 0.25rem solid;
-            opacity: 0.2;
-        }
-        .score-low {
-            background: rgba(16, 185, 129, 0.1);
-            color: #065f46;
-        }
-        .score-low::after {
-            border-color: #10b981;
-        }
-        .score-medium {
-            background: rgba(245, 158, 11, 0.1);
-            color: #92400e;
-        }
-        .score-medium::after {
-            border-color: #f59e0b;
-        }
-        .score-high {
-            background: rgba(239, 68, 68, 0.1);
-            color: #991b1b;
-        }
-        .score-high::after {
-            border-color: #ef4444;
-        }
-        .risk-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-        .risk-low {
-            background: rgba(16, 185, 129, 0.1);
-            color: #065f46;
-        }
-        .risk-medium {
-            background: rgba(245, 158, 11, 0.1);
-            color: #92400e;
-        }
-        .risk-high {
-            background: rgba(239, 68, 68, 0.1);
-            color: #991b1b;
-        }
-        .recommendation-card {
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            background: white;
-            border-left: 4px solid var(--primary);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
-        }
-        .recommendation-card.critical {
-            border-left-color: var(--danger);
-        }
-        .recommendation-card.important {
-            border-left-color: var(--warning);
-        }
-        .recommendation-card.suggested {
-            border-left-color: var(--success);
-        }
-        .behavior-pattern {
-            padding: 15px;
-            border-left: 4px solid var(--primary);
-            background-color: #f8f9fa;
-            margin-bottom: 15px;
-            border-radius: 0 8px 8px 0;
-        }
-        .pattern-indicator {
-            height: 8px;
-            width: 100%;
-            background: #eee;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .pattern-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-        .psych-trait {
-            padding: 12px;
-            margin: 8px 0;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid var(--warning);
-        }
-        .dashboard-card {
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-            height: 100%;
-        }
-        .conversation-container {
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 1rem;
-            background: #f8fafc;
-            border-radius: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .message {
-            margin-bottom: 1rem;
-            display: flex;
-        }
-        .message-bot {
-            justify-content: flex-start;
-        }
-        .message-user {
-            justify-content: flex-end;
-        }
-        .message-content {
-            padding: 0.75rem 1rem;
-            border-radius: 1rem;
-            max-width: 80%;
-        }
-        .message-bot .message-content {
-            background: white;
-            border: 1px solid #e2e8f0;
-        }
-        .message-user .message-content {
-            background: var(--primary);
-            color: white;
-        }
-        .typing-indicator {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            background: white;
-            border-radius: 1rem;
-            border: 1px solid #e2e8f0;
-        }
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background: #94a3b8;
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: typingAnimation 1.4s infinite ease-in-out;
-        }
-        .typing-dot:nth-child(1) {
-            animation-delay: 0s;
-        }
-        .typing-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        .typing-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        @keyframes typingAnimation {
-            0%, 60%, 100% {
-                transform: translateY(0);
-            }
-            30% {
-                transform: translateY(-5px);
-            }
-        }
-        .option-btn {
-            display: inline-block;
-            padding: 0.75rem 1.25rem;
-            margin: 0.25rem;
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-        }
-        .option-btn:hover {
-            background: #f1f5f9;
-            border-color: #3b82f6;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-        }
-        .option-btn:active {
-            transform: translateY(0);
-            background: #dbeafe;
-            border-color: #2563eb;
-        }
-        @media (max-width: 768px) {
-            .message-content {
-                max-width: 90%;
-            }
-            .score-circle {
-                width: 5rem;
-                height: 5rem;
-                font-size: 1.25rem;
-            }
-        }
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --secondary: #8b5cf6; --accent: #ec4899; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --light: #f8fafc; --dark: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); min-height: 100vh; }
+        .screen { display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        .screen.active { display: flex; opacity: 1; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+        .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-secondary:hover { background: #f0f7ff; transform: translateY(-2px); }
+        .progress-bar { height: 0.5rem; border-radius: 1rem; background: #e2e8f0; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 1rem; background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%); transition: width 0.5s ease; }
+        .conversation-container { max-height: 400px; overflow-y: auto; padding: 1rem; background: #f8fafc; border-radius: 1rem; margin-bottom: 1.5rem; }
+        .message { margin-bottom: 1rem; display: flex; }
+        .message-bot { justify-content: flex-start; }
+        .message-user { justify-content: flex-end; }
+        .message-content { padding: 0.75rem 1rem; border-radius: 1rem; max-width: 80%; }
+        .message-bot .message-content { background: white; border: 1px solid #e2e8f0; }
+        .message-user .message-content { background: var(--primary); color: white; }
+        .option-btn { display: inline-block; padding: 0.75rem 1.25rem; margin: 0.25rem; background: white; border: 2px solid #e2e8f0; border-radius: 0.75rem; cursor: pointer; transition: all 0.2s ease; font-weight: 500; }
+        .option-btn:hover { background: #f1f5f9; border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
+        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize;}
+        .status-completed { background-color: #dcfce7; color: #166534; }
+        .status-pending { background-color: #ffedd5; color: #9a3412; }
+        .status-in_progress { background-color: #dbeafe; color: #1e40af; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-    <!-- Navigation Bar -->
-    <nav class="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
+    <nav id="navbar" class="bg-white shadow-sm py-4 px-6 flex justify-between items-center hidden">
         <div class="flex items-center">
-            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3">
-                <i class="fas fa-shield-alt text-white text-lg"></i>
-            </div>
+            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3"><i class="fas fa-shield-alt text-white text-lg"></i></div>
             <h1 class="text-xl font-bold text-blue-600">CyberShield Sentinel</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <button id="nav-dashboard" class="text-gray-600 hover:text-blue-600">
-                <i class="fas fa-chart-line"></i>
-                <span class="hidden md:inline ml-1">Dashboard</span>
-            </button>
-            <button id="nav-new-assessment" class="text-gray-600 hover:text-blue-600">
-                <i class="fas fa-plus-circle"></i>
-                <span class="hidden md:inline ml-1">New Assessment</span>
-            </button>
+            <span id="nav-user-name" class="text-gray-700 font-medium"></span>
+            <button id="logout-btn" class="text-gray-600 hover:text-blue-600"><i class="fas fa-sign-out-alt"></i><span class="hidden md:inline ml-1">Logout</span></button>
         </div>
     </nav>
-    <!-- Login Screen -->
-    <div id="login-screen" class="screen active w-full max-w-md">
-        <div class="card p-8">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 rounded-xl bg-blue-600 flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-shield-alt text-white text-2xl"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">CyberShield Sentinel</h1>
-                <p class="text-gray-600">Corporate Security Assessment Platform</p>
-            </div>
-            <div class="mb-6">
-                <label class="block text-gray-700 font-medium mb-2">Email</label>
-                <input type="email" id="login-email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="you@company.com">
-            </div>
-            <div class="mb-6">
-                <label class="block text-gray-700 font-medium mb-2">Password</label>
-                <input type="password" id="login-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••">
-            </div>
-            <button id="login-btn" class="btn btn-primary w-full mb-4">
-                Sign In <i class="fas fa-arrow-right ml-2"></i>
-            </button>
-            <div class="text-center">
-                <p class="text-sm text-gray-600">Demo Credentials:</p>
-                <p class="text-xs text-gray-500 mt-1">
-                    Admin: admin@company.com / password<br>
-                    Employee: john@company.com / password
-                </p>
-            </div>
-        </div>
-    </div>
-    <!-- Main Content -->
+    
     <main class="flex-1 flex items-center justify-center p-4 py-8">
-        <!-- Welcome Screen -->
-        <div id="welcome-screen" class="screen w-full max-w-4xl">
+        <div id="login-screen" class="screen active w-full max-w-md mx-auto flex-col justify-center">
             <div class="card p-8">
                 <div class="text-center mb-8">
-                    <div class="w-20 h-20 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-shield-alt text-blue-600 text-3xl"></i>
-                    </div>
-                    <h1 class="text-4xl font-bold text-gray-800 mb-4">Corporate Security Assessment</h1>
-                    <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">An adaptive, conversational assessment tailored to your industry and role to uncover your unique security vulnerabilities.</p>
+                    <div class="w-16 h-16 rounded-xl bg-blue-600 flex items-center justify-center mx-auto mb-4"><i class="fas fa-shield-alt text-white text-2xl"></i></div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">CyberShield Sentinel</h1>
+                    <p class="text-gray-600">Corporate Security Assessment Platform</p>
                 </div>
-                <div class="text-center">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">How It Works</h2>
-                    <p class="text-gray-600 mb-8">This assessment adapts to your role in Finance, Healthcare, IT, HR, or other sectors to ask the most relevant security questions.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-8">
-                        <div class="p-6 bg-blue-50 rounded-xl">
-                            <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
-                                <i class="fas fa-building text-blue-600"></i>
-                            </div>
-                            <h3 class="font-semibold text-lg mb-2">Role-Specific</h3>
-                            <p class="text-gray-600">Questions adapt to your job function and industry context.</p>
-                        </div>
-                        <div class="p-6 bg-purple-50 rounded-xl">
-                            <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
-                                <i class="fas fa-brain text-purple-600"></i>
-                            </div>
-                            <h3 class="font-semibold text-lg mb-2">Behavioral Analysis</h3>
-                            <p class="text-gray-600">Identifies psychological triggers like urgency, authority, and curiosity.</p>
-                        </div>
-                        <div class="p-6 bg-orange-50 rounded-xl">
-                            <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center mb-4">
-                                <i class="fas fa-chart-pie text-orange-600"></i>
-                            </div>
-                            <h3 class="font-semibold text-lg mb-2">Actionable Report</h3>
-                            <p class="text-gray-600">Get prioritized recommendations to reduce your organization's risk.</p>
-                        </div>
-                    </div>
-                    <button id="welcome-continue-btn" class="btn btn-primary">
-                        Begin Assessment <i class="fas fa-arrow-right ml-2"></i>
-                    </button>
+                <div id="login-error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert">
+                  <strong class="font-bold">Login Failed!</strong><span class="block sm:inline" id="login-error-message"></span>
                 </div>
+                <div class="mb-6"><label class="block text-gray-700 font-medium mb-2">Email</label><input type="email" id="login-email" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="you@company.com"></div>
+                <div class="mb-6"><label class="block text-gray-700 font-medium mb-2">Password</label><input type="password" id="login-password" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="••••••••"></div>
+                <button id="login-btn" class="btn btn-primary w-full mb-4">Sign In <i class="fas fa-arrow-right ml-2"></i></button>
+                <div class="text-center"><p class="text-sm text-gray-600">Demo Credentials:</p><p class="text-xs text-gray-500 mt-1">Admin: admin@company.com / password<br>Employee: john@company.com / password</p></div>
             </div>
         </div>
-        <!-- Conversation Screen -->
-        <div id="conversation-screen" class="screen w-full max-w-2xl">
-            <div class="card p-8">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-xl font-bold text-gray-800">Security Assessment</h2>
-                        <div class="flex items-center mt-1">
-                            <span class="text-sm text-gray-600">Adaptive conversation</span>
-                        </div>
-                    </div>
-                    <div class="w-40">
-                        <div class="text-xs text-gray-600 text-right mb-1">
-                            <span id="progress-percent">0%</span> Complete
-                        </div>
-                        <div class="progress-bar">
-                            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="conversation-container" id="conversation-container">
-                    <div class="message message-bot">
-                        <div class="message-content">
-                            <p>Hi there! I'm CyberShield Sentinel, your corporate security assistant.</p>
-                        </div>
-                    </div>
-                    <div class="message message-bot">
-                        <div class="message-content">
-                            <p>To tailor this assessment, first tell me: Which industry sector best describes your organization?</p>
-                        </div>
-                    </div>
-                    <div id="typing-indicator" class="message message-bot" style="display: none;">
-                        <div class="typing-indicator">
-                            <div class="typing-dot"></div>
-                            <div class="typing-dot"></div>
-                            <div class="typing-dot"></div>
-                        </div>
-                    </div>
-                </div>
-                <div id="options-container" class="flex flex-wrap justify-center mb-4">
-                    <!-- Dynamically populated -->
-                </div>
-                <div class="flex justify-center mt-4">
-                    <button id="exit-assessment-btn" class="btn btn-secondary">
-                        <i class="fas fa-save mr-2"></i> Save & Exit
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- Report Screen -->
-        <div id="report-screen" class="screen w-full max-w-4xl">
-            <div class="card p-8">
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Your Security Assessment Report</h1>
-                    <p id="report-date" class="text-gray-600">Generated on <span id="report-completion-date"></span></p>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-blue-50 p-6 rounded-xl text-center">
-                        <div id="overall-score-circle" class="score-circle score-low mx-auto mb-4">
-                            78%
-                        </div>
-                        <h3 class="font-semibold text-lg mb-1">Overall Score</h3>
-                        <div id="risk-level" class="risk-badge risk-low">Moderate Risk</div>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <h3 class="font-semibold text-lg mb-4">Category Scores</h3>
-                        <div id="category-scores">
-                            <!-- Category scores will be inserted here -->
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <h3 class="font-semibold text-lg mb-4">Assessment Details</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-sm text-gray-600">Industry</p>
-                                <p id="report-industry" class="font-medium">Finance & Banking</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Role</p>
-                                <p id="report-role" class="font-medium">Finance & Accounting</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Date Completed</p>
-                                <p id="report-completion-date2" class="font-medium">June 15, 2023</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Behavioral Patterns Section -->
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Behavioral Pattern Analysis</h2>
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <div id="behavior-patterns-container">
-                            <!-- Dynamically populated -->
-                        </div>
-                    </div>
-                </div>
-                <!-- Psychological Factors Section -->
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Psychological Factors</h2>
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <div id="psych-factors-container">
-                            <!-- Dynamically populated -->
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Executive Summary</h2>
-                    <div id="report-summary" class="bg-gray-50 p-6 rounded-xl">
-                        <p class="text-gray-700">Loading summary...</p>
-                    </div>
-                </div>
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Personalized Recommendations</h2>
-                    <div id="recommendations-list">
-                        <!-- Dynamically populated -->
-                    </div>
-                </div>
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">What You're Doing Well</h2>
-                    <div id="strengths-list" class="bg-green-50 p-6 rounded-xl">
-                        <ul class="list-disc list-inside space-y-2 text-gray-700">
-                            <!-- Dynamically populated -->
-                        </ul>
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-4 justify-center">
-                    <button id="save-pdf-btn" class="btn btn-primary">
-                        <i class="fas fa-file-pdf mr-2"></i> Save as PDF
-                    </button>
-                    <button id="email-report-btn" class="btn btn-secondary">
-                        <i class="fas fa-envelope mr-2"></i> Email Report
-                    </button>
-                    <button id="remediation-tracker-btn" class="btn btn-success">
-                        <i class="fas fa-tasks mr-2"></i> Remediation Tracker
-                    </button>
-                    <button id="new-assessment-btn" class="btn btn-secondary">
-                        <i class="fas fa-plus mr-2"></i> New Assessment
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- Admin Dashboard -->
-        <div id="admin-dashboard" class="screen w-full max-w-6xl">
-            <div class="card p-8">
-                <div class="flex justify-between items-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-                    <button id="admin-logout-btn" class="btn btn-secondary">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                    </button>
-                </div>
 
+        <div id="admin-dashboard" class="screen w-full max-w-6xl mx-auto flex-col">
+            <div class="card p-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-8">Admin Dashboard</h1>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="dashboard-card bg-blue-50">
-                        <h3 class="font-bold text-lg mb-2">Total Employees</h3>
-                        <p class="text-3xl font-bold text-blue-600" id="total-employees">42</p>
-                    </div>
-                    <div class="dashboard-card bg-orange-50">
-                        <h3 class="font-bold text-lg mb-2">Pending Assessments</h3>
-                        <p class="text-3xl font-bold text-orange-600" id="pending-assessments">18</p>
-                    </div>
-                    <div class="dashboard-card bg-green-50">
-                        <h3 class="font-bold text-lg mb-2">Avg. Security Score</h3>
-                        <p class="text-3xl font-bold text-green-600" id="avg-security-score">68%</p>
-                    </div>
+                    <div class="p-6 bg-blue-50 rounded-lg"><h3 class="font-bold text-lg mb-2">Total Employees</h3><p class="text-3xl font-bold text-blue-600" id="total-employees">--</p></div>
+                    <div class="p-6 bg-orange-50 rounded-lg"><h3 class="font-bold text-lg mb-2">Pending Assessments</h3><p class="text-3xl font-bold text-orange-600" id="pending-assessments">--</p></div>
+                    <div class="p-6 bg-green-50 rounded-lg"><h3 class="font-bold text-lg mb-2">Avg. Security Score</h3><p class="text-3xl font-bold text-green-600" id="avg-security-score">--%</p></div>
                 </div>
-
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Assign New Assessment</h2>
                     <div class="bg-gray-50 p-6 rounded-xl">
+                        <div id="assign-success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 hidden" role="alert">Assessment assigned successfully!</div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">Select Employee</label>
-                                <select id="assign-employee" class="w-full p-3 border border-gray-300 rounded-lg">
-                                    <option value="">-- Select Employee --</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">Due Date</label>
-                                <input type="date" id="due-date" class="w-full p-3 border border-gray-300 rounded-lg">
-                            </div>
+                            <div><label class="block text-gray-700 font-medium mb-2">Select Employee</label><select id="assign-employee" class="w-full p-3 border border-gray-300 rounded-lg"><option value="">-- Loading Employees --</option></select></div>
+                            <div><label class="block text-gray-700 font-medium mb-2">Due Date</label><input type="date" id="due-date" class="w-full p-3 border border-gray-300 rounded-lg"></div>
                         </div>
-                        <button id="assign-assessment-btn" class="btn btn-primary">
-                            <i class="fas fa-tasks mr-2"></i> Assign Assessment
-                        </button>
+                        <button id="assign-assessment-btn" class="btn btn-primary"><i class="fas fa-tasks mr-2"></i> Assign Assessment</button>
                     </div>
                 </div>
-
-                <div class="mb-8">
+                <div>
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Employee Risk Overview</h2>
                     <div class="bg-gray-50 p-6 rounded-xl overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b">
-                                    <th class="text-left p-3 font-medium">Employee</th>
-                                    <th class="text-left p-3 font-medium">Department</th>
-                                    <th class="text-left p-3 font-medium">Last Score</th>
-                                    <th class="text-left p-3 font-medium">Status</th>
-                                    <th class="text-left p-3 font-medium">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="employee-table-body">
-                                <!-- Dynamically populated -->
-                            </tbody>
-                        </table>
+                        <table class="w-full"><thead class="border-b"><tr class="text-left"><th class="p-3 font-medium">Employee</th><th class="p-3 font-medium">Department</th><th class="p-3 font-medium">Last Score</th><th class="p-3 font-medium">Status</th></tr></thead><tbody id="employee-table-body"></tbody></table>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Employee Dashboard -->
-        <div id="employee-dashboard" class="screen w-full max-w-4xl">
+
+        <div id="employee-dashboard" class="screen w-full max-w-4xl mx-auto flex-col">
             <div class="card p-8">
-                <div class="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800">Welcome, <span id="employee-name">John Doe</span></h1>
-                        <p class="text-gray-600">Department: <span id="employee-department">Finance</span></p>
-                    </div>
-                    <button id="employee-logout-btn" class="btn btn-secondary">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="dashboard-card bg-blue-50 text-center">
-                        <div class="text-4xl font-bold text-blue-600 mb-2" id="employee-overall-score">72%</div>
-                        <div class="text-sm font-medium text-gray-600">Overall Security Score</div>
-                        <div class="mt-2">
-                            <span id="employee-risk-badge" class="risk-badge risk-medium">Moderate Risk</span>
-                        </div>
-                    </div>
-                    <div class="dashboard-card bg-purple-50">
-                        <h3 class="font-bold text-lg mb-2">Assigned Assessments</h3>
-                        <p class="text-3xl font-bold text-purple-600" id="assigned-count">1</p>
-                        <p class="text-sm text-gray-600">Due by <span id="next-due-date">Jun 30, 2024</span></p>
-                    </div>
-                    <div class="dashboard-card bg-green-50">
-                        <h3 class="font-bold text-lg mb-2">Completed</h3>
-                        <p class="text-3xl font-bold text-green-600" id="completed-count">3</p>
-                        <p class="text-sm text-gray-600">Last: <span id="last-completed">Jun 15, 2024</span></p>
-                    </div>
-                </div>
-
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome, <span id="employee-name"></span></h1>
+                <p class="text-gray-600 mb-8">Department: <span id="employee-department"></span></p>
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Assigned Assessments</h2>
-                    <div class="space-y-4" id="assigned-assessments-list">
-                        <!-- Dynamically populated -->
-                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-semibold">Quarterly Security Assessment</h4>
-                                    <p class="text-sm text-gray-600">Due: June 30, 2024</p>
-                                </div>
-                                <button class="btn btn-primary btn-sm start-assessment-btn" data-assessment-id="1">
-                                    Start Now
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="space-y-4" id="assigned-assessments-list"></div>
                 </div>
-
-                <div class="mb-8">
+                <div>
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Past Reports</h2>
-                    <div class="space-y-4" id="past-reports-list">
-                        <!-- Dynamically populated -->
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h4 class="font-semibold">Q2 Security Assessment</h4>
-                                    <p class="text-sm text-gray-600">Completed: June 15, 2024</p>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <button class="btn btn-secondary btn-sm view-report-btn" data-report-id="1">
-                                        View
-                                    </button>
-                                    <button class="btn btn-secondary btn-sm">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="space-y-4" id="past-reports-list"></div>
                 </div>
             </div>
         </div>
-    </main>
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 py-6 px-6">
-        <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">
-            <p class="text-gray-600 text-sm mb-4 md:mb-0">© 2024 CyberShield Sentinel. All rights reserved.</p>
-            <div class="flex space-x-6">
-                <a href="#" class="text-gray-600 hover:text-blue-600 text-sm">Privacy Policy</a>
-                <a href="#" class="text-gray-600 hover:text-blue-600 text-sm">Terms of Service</a>
-                <a href="#" class="text-gray-600 hover:text-blue-600 text-sm">Contact Us</a>
+
+        <div id="conversation-screen" class="screen w-full max-w-2xl mx-auto flex-col justify-center">
+            <div class="card p-8">
+                <div class="flex items-center justify-between mb-6"><h2 class="text-xl font-bold text-gray-800">Security Assessment</h2>
+                    <div class="w-40"><div class="text-xs text-gray-600 text-right mb-1"><span id="progress-percent">0%</span> Complete</div><div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width: 0%"></div></div></div>
+                </div>
+                <div class="conversation-container" id="conversation-container"></div>
+                <div id="options-container" class="flex flex-wrap justify-center mb-4"></div>
             </div>
         </div>
-    </footer>
+        <div id="report-screen" class="screen w-full max-w-4xl mx-auto flex-col">
+            <div class="card p-8">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Your Security Assessment Report</h1>
+                    <p class="text-gray-600">Generated on <span id="report-date"></span> for <span id="report-user-name"></span></p>
+                </div>
+        
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-blue-50 p-6 rounded-xl text-center flex flex-col justify-center">
+                        <p class="text-6xl font-bold text-blue-700" id="report-score">--%</p>
+                        <h3 class="font-semibold text-lg mb-1">Overall Score</h3>
+                        <div id="report-risk-level" class="font-bold text-lg"></div>
+                    </div>
+                    <div class="md:col-span-2 bg-gray-50 p-6 rounded-xl">
+                        <h3 class="font-semibold text-lg mb-4">Category Scores</h3>
+                        <div id="report-category-scores" class="space-y-4"></div>
+                    </div>
+                </div>
+        
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Behavioral Pattern Analysis</h2>
+                    <div id="report-behavioral-patterns" class="bg-gray-50 p-6 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                        </div>
+                </div>
+        
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Actionable Recommendations</h2>
+                    <div id="report-recommendations" class="space-y-3"></div>
+                </div>
+        
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">What You're Doing Well</h2>
+                    <div class="bg-green-50 p-6 rounded-xl">
+                        <ul id="report-strengths" class="list-disc list-inside space-y-2 text-green-800"></ul>
+                    </div>
+                </div>
+        
+                <div class="text-center">
+                    <button id="back-to-dashboard-btn" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    
     <script>
-        // Application state
-        const state = {
-            currentScreen: 'login-screen',
-            isAuthenticated: false,
-            user: null,
-            token: null,
-            conversation: [],
-            answers: {},
-            behavioralPatterns: {},
-            psychologicalFactors: {},
-            currentQuestion: null,
-            askedQuestions: new Set(),
-            currentSessionId: null
+        const state = { currentScreen: 'login-screen', user: null, token: null, currentSessionId: null, totalQuestions: 10 };
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        const ui = {
+            screens: document.querySelectorAll('.screen'),
+            navbar: document.getElementById('navbar'),
+            navUserName: document.getElementById('nav-user-name'),
+            login: { screen: document.getElementById('login-screen'), emailInput: document.getElementById('login-email'), passwordInput: document.getElementById('login-password'), loginBtn: document.getElementById('login-btn'), error: document.getElementById('login-error'), errorMessage: document.getElementById('login-error-message'), },
+            admin: { screen: document.getElementById('admin-dashboard'), totalEmployees: document.getElementById('total-employees'), pendingAssessments: document.getElementById('pending-assessments'), avgScore: document.getElementById('avg-security-score'), assignEmployeeSelect: document.getElementById('assign-employee'), dueDateInput: document.getElementById('due-date'), assignBtn: document.getElementById('assign-assessment-btn'), employeeTableBody: document.getElementById('employee-table-body'), assignSuccess: document.getElementById('assign-success'), },
+            employee: { screen: document.getElementById('employee-dashboard'), name: document.getElementById('employee-name'), department: document.getElementById('employee-department'), assignedList: document.getElementById('assigned-assessments-list'), pastReportsList: document.getElementById('past-reports-list'), },
+            assessment: { screen: document.getElementById('conversation-screen'), conversationContainer: document.getElementById('conversation-container'), optionsContainer: document.getElementById('options-container'), progressPercent: document.getElementById('progress-percent'), progressFill: document.getElementById('progress-fill'), },
+            logoutBtn: document.getElementById('logout-btn'),
         };
-    
-        let QUESTION_DATABASE = {};
-    
-        async function initializeApp() {
-            document.getElementById('login-btn').addEventListener('click', handleLogin);
-            document.getElementById('admin-logout-btn').addEventListener('click', handleLogout);
-            document.getElementById('employee-logout-btn').addEventListener('click', handleLogout);
-    
-            await loadLatestQuestions();
-    
-            document.getElementById('nav-dashboard').addEventListener('click', () => {
-                if (state.user && state.user.role === 'admin') {
-                    showScreen('admin-dashboard');
-                    renderAdminDashboard();
-                } else if (state.user) {
-                    showScreen('employee-dashboard');
-                    renderEmployeeDashboard();
-                } else {
-                    showScreen('login-screen');
-                }
-            });
-    
-            document.getElementById('nav-new-assessment').addEventListener('click', () => {
-                if (state.user && state.user.role === 'admin') {
-                    showScreen('admin-dashboard');
-                } else if (state.user) {
-                    startNewAssessment();
-                } else {
-                    showScreen('login-screen');
-                }
-            });
-    
-            document.getElementById('new-assessment-btn').addEventListener('click', () => {
-                resetAssessment();
-                startNewAssessment();
-            });
-    
-            document.getElementById('exit-assessment-btn').addEventListener('click', () => {
-                if (state.user && state.user.role === 'admin') {
-                    showScreen('admin-dashboard');
-                } else if (state.user) {
-                    showScreen('employee-dashboard');
-                } else {
-                    showScreen('login-screen');
-                }
-            });
-    
-            document.getElementById('save-pdf-btn').addEventListener('click', () => {
-                alert('PDF generation would be implemented server-side.');
-            });
-    
-            document.getElementById('email-report-btn').addEventListener('click', () => {
-                alert('Email functionality would be implemented server-side.');
-            });
-    
-            document.getElementById('welcome-continue-btn').addEventListener('click', () => {
-                if (state.user && state.user.role === 'admin') {
-                    showScreen('admin-dashboard');
-                } else if (state.user) {
-                    startNewAssessment();
-                } else {
-                    showScreen('login-screen');
-                }
-            });
+
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+            const options = { method, headers, body: body ? JSON.stringify(body) : null };
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            return data;
         }
-    
-        async function handleLogin() {
-            const email = document.getElementById('login-email').value.trim();
-            const password = document.getElementById('login-password').value;
-    
-            if (!email || !password) {
-                alert('Please enter both email and password.');
-                return;
-            }
-    
-            try {
-                const response = await fetch('http://localhost:5000/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-    
-                const data = await response.json();
-    
-                if (!response.ok) {
-                    throw new Error(data.error || 'Login failed');
-                }
-    
-                state.isAuthenticated = true;
-                state.user = data.user;
-                state.token = data.token;
-    
-                if (state.user.role === 'admin') {
-                    showScreen('admin-dashboard');
-                    renderAdminDashboard();
-                } else {
-                    showScreen('employee-dashboard');
-                    renderEmployeeDashboard();
-                }
-            } catch (err) {
-                console.error('Login error:', err);
-                alert('Login failed: ' + err.message);
-            }
-        }
-    
-        function handleLogout() {
-            state.isAuthenticated = false;
-            state.user = null;
-            state.token = null;
-            state.currentSessionId = null;
-            showScreen('login-screen');
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
-        }
-    
+        
         function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
+            ui.screens.forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             state.currentScreen = screenId;
+            ui.navbar.classList.toggle('hidden', screenId === 'login-screen');
         }
-    
-        async function loadLatestQuestions() {
+
+        async function handleLogin() {
+            const email = ui.login.emailInput.value.trim();
+            const password = ui.login.passwordInput.value;
+            ui.login.error.classList.add('hidden');
+            if (!email || !password) { ui.login.errorMessage.textContent = 'Please enter both email and password.'; ui.login.error.classList.remove('hidden'); return; }
             try {
-                const response = await fetch('http://localhost:5000/api/questions/latest');
-                if (!response.ok) throw new Error('Failed to load questions');
-                QUESTION_DATABASE = await response.json();
-            } catch (err) {
-                console.error("Failed to load questions from API:", err);
-                QUESTION_DATABASE = {
-                    'industry-sector': {
-                        text: 'Which industry sector best describes your organization?',
-                        options: ['Finance & Banking', 'Healthcare', 'Technology', 'Manufacturing', 'Government', 'Education', 'Other'],
-                        next: 'comfort-level',
-                        patterns: { roleRisk: { 'Finance & Banking': 2, 'Healthcare': 3, 'Technology': 1, 'Manufacturing': 2, 'Government': 4, 'Education': 2, 'Other': 1 } }
-                    },
-                    'comfort-level': {
-                        text: 'How comfortable are you with technology?',
-                        options: ['Very comfortable', 'Somewhat comfortable', 'Not very comfortable', 'Not at all comfortable'],
-                        next: 'tech-usage',
-                        patterns: { techComfort: { 'Very comfortable': 0, 'Somewhat comfortable': 1, 'Not very comfortable': 2, 'Not at all comfortable': 3 } }
-                    }
-                };
-            }
+                const data = await apiCall('/auth/login', 'POST', { email, password });
+                state.token = data.token; state.user = data.user;
+                ui.navUserName.textContent = state.user.name;
+                if (state.user.role === 'admin') { renderAdminDashboard(); showScreen('admin-dashboard'); } 
+                else { renderEmployeeDashboard(); showScreen('employee-dashboard'); }
+            } catch (err) { ui.login.errorMessage.textContent = err.message; ui.login.error.classList.remove('hidden'); }
         }
-    
-        async function startNewAssessment() {
-            if (!state.token) {
-                alert('You must be logged in to start an assessment.');
-                showScreen('login-screen');
-                return;
-            }
-    
-            try {
-                const response = await fetch('http://localhost:5000/api/assessments/start', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-    
-                const data = await response.json();
-    
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to start assessment');
-                }
-    
-                state.currentSessionId = data.session_id;
-                resetAssessment();
-    
-                state.currentQuestion = data.current_question.id;
-                addMessage(data.current_question.text, 'bot');
-                renderQuestionOptions(data.current_question);
-    
-                showScreen('conversation-screen');
-            } catch (err) {
-                console.error('Error starting assessment:', err);
-                alert('Failed to start assessment: ' + err.message);
-            }
+        
+        function handleLogout() {
+            state.token = null; state.user = null;
+            ui.login.emailInput.value = ''; ui.login.passwordInput.value = '';
+            showScreen('login-screen');
         }
-    
-        function resetAssessment() {
-            state.conversation = [];
-            state.answers = {};
-            state.behavioralPatterns = {};
-            state.psychologicalFactors = {};
-            state.currentQuestion = null;
-            state.askedQuestions = new Set();
-        }
-    
-        function renderQuestionOptions(question) {
-            const optionsContainer = document.getElementById('options-container');
-            optionsContainer.innerHTML = '';
-    
-            question.options.forEach(option => {
-                const optionBtn = document.createElement('div');
-                optionBtn.className = 'option-btn';
-                optionBtn.textContent = option;
-                optionBtn.addEventListener('click', () => {
-                    handleOptionSelect(option, question.id);
-                });
-                optionsContainer.appendChild(optionBtn);
-            });
-    
-            const progress = Math.min(100, Math.round((state.askedQuestions.size / Object.keys(QUESTION_DATABASE).length) * 100));
-            document.getElementById('progress-percent').textContent = `${progress}%`;
-            document.getElementById('progress-fill').style.width = `${progress}%`;
-        }
-    
-        async function handleOptionSelect(option, questionId) {
-            addMessage(option, 'user');
-            state.answers[questionId] = option;
-    
-            const question = QUESTION_DATABASE[questionId];
-            if (question && question.patterns) {
-                for (const pattern in question.patterns) {
-                    if (!state.behavioralPatterns[pattern]) {
-                        state.behavioralPatterns[pattern] = 0;
-                    }
-                    state.behavioralPatterns[pattern] += question.patterns[pattern][option] || 0;
-                }
-            }
-    
-            if (!state.currentSessionId) {
-                alert('No active session found.');
-                return;
-            }
-    
-            try {
-                const response = await fetch(`http://localhost:5000/api/assessments/${state.currentSessionId}/answer`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ questionId, answer: option })
-                });
-    
-                const data = await response.json();
-    
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to submit answer');
-                }
-    
-                if (data.is_complete) {
-                    endAssessment();
-                } else {
-                    state.currentQuestion = data.next_question.id;
-                    state.askedQuestions.add(data.next_question.id);
-                    addMessage(data.next_question.text, 'bot');
-                    renderQuestionOptions(data.next_question);
-                }
-            } catch (err) {
-                console.error('Error submitting answer:', err);
-                alert('Failed to submit answer: ' + err.message);
-            }
-        }
-    
-        function addMessage(text, sender) {
-            const conversationContainer = document.getElementById('conversation-container');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message message-${sender}`;
-            const messageContent = document.createElement('div');
-            messageContent.className = 'message-content';
-            messageContent.innerHTML = `<p>${text}</p>`;
-            messageDiv.appendChild(messageContent);
-            conversationContainer.appendChild(messageDiv);
-            conversationContainer.scrollTop = conversationContainer.scrollHeight;
-            state.conversation.push({ sender, text });
-        }
-    
-        async function endAssessment() {
-            const typingIndicator = document.getElementById('typing-indicator');
-            typingIndicator.style.display = 'flex';
-    
-            setTimeout(() => {
-                typingIndicator.style.display = 'none';
-                addMessage("Thank you for completing the assessment! I'm now generating your personalized security report.", 'bot');
-    
-                setTimeout(async () => {
-                    showScreen('report-screen');
-                    await generateReport();
-                }, 1500);
-            }, 1000);
-        }
-    
-        async function generateReport() {
-            if (!state.currentSessionId) {
-                alert('No session found to generate report.');
-                return;
-            }
-    
-            try {
-                const response = await fetch(`http://localhost:5000/api/assessments/${state.currentSessionId}/report`, {
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`
-                    }
-                });
-    
-                const data = await response.json();
-    
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch report');
-                }
-    
-                const report = data.report;
-    
-                document.getElementById('overall-score-circle').textContent = `${report.overall_score}%`;
-    
-                let riskLevel = "Low Risk";
-                let riskClass = "risk-low";
-                if (report.overall_score < 70) {
-                    riskLevel = "Moderate Risk";
-                    riskClass = "risk-medium";
-                }
-                if (report.overall_score < 50) {
-                    riskLevel = "High Risk";
-                    riskClass = "risk-high";
-                }
-    
-                const riskElement = document.getElementById('risk-level');
-                riskElement.textContent = riskLevel;
-                riskElement.className = `risk-badge ${riskClass}`;
-    
-                document.getElementById('report-industry').textContent = "Not specified";
-                document.getElementById('report-role').textContent = state.user ? state.user.department : "Not specified";
-    
-                const completionDate = new Date(report.generated_at).toLocaleDateString();
-                document.getElementById('report-completion-date').textContent = completionDate;
-                document.getElementById('report-completion-date2').textContent = completionDate;
-    
-                const categoryScores = JSON.parse(report.category_scores || '{}');
-                const categoryScoresContainer = document.getElementById('category-scores');
-                categoryScoresContainer.innerHTML = '';
-    
-                Object.entries(categoryScores).forEach(([name, score]) => {
-                    const scoreElement = document.createElement('div');
-                    scoreElement.className = 'flex justify-between items-center mb-2';
-                    scoreElement.innerHTML = `
-                        <span class="text-gray-600">${name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                        <span class="font-semibold">${score}%</span>
-                    `;
-                    categoryScoresContainer.appendChild(scoreElement);
-    
-                    const progressElement = document.createElement('div');
-                    progressElement.className = 'progress-bar mb-4';
-                    progressElement.innerHTML = `<div class="progress-fill" style="width: ${score}%"></div>`;
-                    categoryScoresContainer.appendChild(progressElement);
-                });
-    
-                document.getElementById('behavior-patterns-container').innerHTML = '<p>Behavioral patterns analysis is being refined.</p>';
-                document.getElementById('psych-factors-container').innerHTML = '<p>Psychological factors analysis is being refined.</p>';
-                document.getElementById('report-summary').innerHTML = `<p class="text-gray-700">${report.executive_summary || 'No summary available.'}</p>`;
-                document.getElementById('recommendations-list').innerHTML = '<p>Personalized recommendations are being generated.</p>';
-    
-                const strengthsList = document.getElementById('strengths-list').querySelector('ul');
-                strengthsList.innerHTML = '<li>Strengths analysis is being refined.</li>';
-            } catch (err) {
-                console.error('Error generating report:', err);
-                alert('Failed to generate report: ' + err.message);
-            }
-        }
-    
-        // --- NEW: Render Admin Dashboard with Real Data ---
+
         async function renderAdminDashboard() {
             try {
-                // Fetch stats
-                const statsResponse = await fetch('http://localhost:5000/api/admin/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`
-                    }
-                });
-
-                const stats = await statsResponse.json();
-
-                document.getElementById('total-employees').textContent = stats.stats.totalEmployees;
-                document.getElementById('pending-assessments').textContent = stats.stats.pendingAssessments;
-                document.getElementById('avg-security-score').textContent = stats.stats.avgSecurityScore + '%';
-
-                // Fetch employees
-                const employeesResponse = await fetch('http://localhost:5000/api/admin/employees', {
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`
-                    }
-                });
-
-                const employees = await employeesResponse.json();
-
-                const tableBody = document.getElementById('employee-table-body');
-                tableBody.innerHTML = '';
-
-                employees.forEach(emp => {
-                    const row = document.createElement('tr');
-                    row.className = 'border-b hover:bg-gray-50';
-                    row.innerHTML = `
+                const [dashboardData, employees] = await Promise.all([ apiCall('/admin/dashboard'), apiCall('/admin/employees') ]);
+                ui.admin.totalEmployees.textContent = dashboardData.stats.totalEmployees;
+                ui.admin.pendingAssessments.textContent = dashboardData.stats.pendingAssessments;
+                ui.admin.avgScore.textContent = `${dashboardData.stats.avgSecurityScore}%`;
+                ui.admin.employeeTableBody.innerHTML = employees.map(emp => `
+                    <tr class="border-b hover:bg-gray-50 text-sm">
                         <td class="p-3">${emp.name}</td>
                         <td class="p-3">${emp.department}</td>
-                        <td class="p-3">${emp.lastScore ? emp.lastScore + '%' : 'N/A'}</td>
-                        <td class="p-3">
-                            ${emp.isCompleted
-                                ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Up to Date</span>'
-                                : '<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">Pending</span>'}
-                        </td>
-                        <td class="p-3">
-                            <button class="btn btn-secondary btn-sm assign-training-btn" data-email="${emp.email}">
-                                Assign Training
-                            </button>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-
-                // Populate select dropdown
-                const select = document.getElementById('assign-employee');
-                select.innerHTML = '<option value="">-- Select Employee --</option>';
-                employees.forEach(emp => {
-                    const option = document.createElement('option');
-                    option.value = emp.email;
-                    option.textContent = `${emp.name} (${emp.department})`;
-                    select.appendChild(option);
-                });
-
-            } catch (err) {
-                console.error('Error loading admin dashboard:', err);
-                document.getElementById('total-employees').textContent = 'Error';
-                document.getElementById('pending-assessments').textContent = 'Error';
-                document.getElementById('avg-security-score').textContent = 'Error';
-                document.getElementById('employee-table-body').innerHTML = '<tr><td colspan="5" class="p-3 text-center">Error loading data</td></tr>';
-            }
+                        <td class="p-3">${emp.last_score ? emp.last_score + '%' : 'N/A'}</td>
+                        <td class="p-3"><span class="status-badge status-${(emp.assignment_status || 'completed').replace(' ', '_')}">${emp.assignment_status || 'Completed'}</span></td>
+                    </tr>`).join('');
+                ui.admin.assignEmployeeSelect.innerHTML = '<option value="">-- Select Employee --</option>' + employees.map(emp => `<option value="${emp.email}">${emp.name} (${emp.department})</option>`).join('');
+            } catch (error) { console.error('Failed to load admin dashboard:', error); alert('Could not load admin data.'); }
         }
-    
-        // --- NEW: Render Employee Dashboard with Real Data ---
+
+        async function handleAssignAssessment() {
+            const user_id = ui.admin.assignEmployeeSelect.value;
+            const due_date = ui.admin.dueDateInput.value;
+            if (!user_id || !due_date) return alert('Please select an employee and a due date.');
+            try {
+                await apiCall('/assign', 'POST', { user_id, due_date });
+                ui.admin.assignSuccess.classList.remove('hidden');
+                setTimeout(() => ui.admin.assignSuccess.classList.add('hidden'), 3000);
+                renderAdminDashboard();
+            } catch (error) { alert(`Failed to assign assessment: ${error.message}`); }
+        }
+
         async function renderEmployeeDashboard() {
-            if (!state.user) return;
-    
+            ui.employee.name.textContent = state.user.name;
+            ui.employee.department.textContent = state.user.department;
             try {
-                const response = await fetch('http://localhost:5000/api/employee/dashboard', {
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`
-                    }
-                });
-    
-                const data = await response.json();
-    
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to load dashboard');
-                }
-    
-                // Update header
-                document.getElementById('employee-name').textContent = state.user.name;
-                document.getElementById('employee-department').textContent = state.user.department;
-    
-                // Find last completed assessment
-                const lastCompleted = data.assessments.find(a => a.status === 'completed');
-                if (lastCompleted && lastCompleted.overallScore) {
-                    document.getElementById('employee-overall-score').textContent = `${lastCompleted.overallScore}%`;
-    
-                    let riskClass = 'risk-low';
-                    let riskText = 'Low Risk';
-                    if (lastCompleted.overallScore < 70) {
-                        riskClass = 'risk-medium';
-                        riskText = 'Moderate Risk';
-                    }
-                    if (lastCompleted.overallScore < 50) {
-                        riskClass = 'risk-high';
-                        riskText = 'High Risk';
-                    }
-    
-                    const riskBadge = document.getElementById('employee-risk-badge');
-                    riskBadge.textContent = riskText;
-                    riskBadge.className = `risk-badge ${riskClass}`;
-                }
-    
-                // Update counts
-                document.getElementById('assigned-count').textContent = data.assignments.length;
-                document.getElementById('completed-count').textContent = data.assessments.filter(a => a.status === 'completed').length;
-    
-                // Update dates
-                const nextDue = data.assignments.find(a => !a.completed);
-                if (nextDue) {
-                    document.getElementById('next-due-date').textContent = new Date(nextDue.dueDate).toLocaleDateString();
-                }
-    
-                if (lastCompleted && lastCompleted.completedDate) {
-                    document.getElementById('last-completed').textContent = new Date(lastCompleted.completedDate).toLocaleDateString();
-                }
-    
-                // Populate assigned assessments
-                const assignedList = document.getElementById('assigned-assessments-list');
-                assignedList.innerHTML = '';
-                data.assignments.filter(a => !a.completed).forEach(assignment => {
-                    const div = document.createElement('div');
-                    div.className = 'bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500';
-                    div.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="font-semibold">${assignment.type} Assessment</h4>
-                                <p class="text-sm text-gray-600">Due: ${new Date(assignment.dueDate).toLocaleDateString()}</p>
-                            </div>
-                            <button class="btn btn-primary btn-sm start-assessment-btn" data-assessment-id="${assignment.id}">
-                                Start Now
-                            </button>
+                const data = await apiCall('/employee/dashboard');
+                ui.employee.assignedList.innerHTML = data.assignments.filter(a => a.status === 'pending' || a.status === 'in_progress').map(a => {
+                    const isPending = a.status === 'pending';
+                    return `
+                    <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-semibold">${a.assessment_type} Assessment</h4>
+                            <p class="text-sm text-gray-600">Due: ${new Date(a.due_date).toLocaleDateString()} <span class="status-badge status-${a.status.replace(' ', '_')}">${a.status}</span></p>
                         </div>
-                    `;
-                    assignedList.appendChild(div);
-                });
-    
-                // Populate past reports
-                const reportsList = document.getElementById('past-reports-list');
-                reportsList.innerHTML = '';
-                data.assessments.filter(a => a.status === 'completed').forEach(assessment => {
-                    const div = document.createElement('div');
-                    div.className = 'bg-gray-50 p-4 rounded-lg';
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h4 class="font-semibold">${assessment.status} Assessment</h4>
-                                <p class="text-sm text-gray-600">Completed: ${new Date(assessment.completedDate).toLocaleDateString()}</p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="btn btn-secondary btn-sm view-report-btn" data-session-id="${assessment.sessionId}">
-                                    View
-                                </button>
-                                <button class="btn btn-secondary btn-sm">
-                                    <i class="fas fa-file-pdf"></i>
-                                </button>
-                            </div>
+                        <button class="btn ${isPending ? 'btn-primary' : 'btn-secondary'} btn-sm start-assessment-btn" data-assignment-id="${a.assignment_id}">
+                            ${isPending ? 'Start Now' : 'Resume'}
+                        </button>
+                    </div>`;
+                }).join('') || '<p class="text-gray-500">No pending assessments. Great job!</p>';
+                
+                ui.employee.pastReportsList.innerHTML = data.assessments.filter(a => a.status === 'completed' && a.overall_score != null).map(a => `
+                    <div class="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <h4 class="font-semibold">Assessment Report</h4>
+                            <p class="text-sm text-gray-600">Completed: ${new Date(a.completed_date).toLocaleDateString()}</p>
                         </div>
-                    `;
-                    reportsList.appendChild(div);
-                });
-    
-                // Add event listener for view report
-                document.getElementById('past-reports-list').addEventListener('click', async (e) => {
-                    if (e.target.classList.contains('view-report-btn')) {
-                        const sessionId = e.target.dataset.sessionId;
-                        try {
-                            const response = await fetch(`http://localhost:5000/api/assessments/${sessionId}/report`, {
-                                headers: {
-                                    'Authorization': `Bearer ${state.token}`
-                                }
-                            });
-                            const reportData = await response.json();
-                            if (response.ok) {
-                                // You can extend this to show the report in a modal or new screen
-                                alert(`Report Score: ${reportData.report.overall_score}%`);
-                            }
-                        } catch (err) {
-                            console.error('Error fetching report:', err);
-                        }
-                    }
-                });
-            } catch (err) {
-                console.error('Error loading employee dashboard:', err);
-                document.getElementById('employee-name').textContent = 'Error';
-                document.getElementById('employee-department').textContent = 'Error';
+                        <button class="btn btn-secondary btn-sm view-report-btn" data-session-id="${a.session_id}">
+                            View Report (${a.overall_score}%)
+                        </button>
+                    </div>`).join('') || '<p class="text-gray-500">No past reports found.</p>';
+            } catch (error) { alert(`Failed to load your dashboard: ${error.message}`); }
+        }
+                
+        let questionHistory = [];
+        async function startAssessment(assignmentId) {
+            if (!assignmentId) return alert('Invalid assignment selected.');
+            try {
+                const data = await apiCall('/assessments/start', 'POST', { assignmentId });
+                state.currentSessionId = data.session_id;
+                questionHistory = [data.current_question];
+                renderConversation();
+                // *** THIS IS THE CORRECTED LINE ***
+                showScreen('conversation-screen'); 
+            } catch (error) { alert(`Could not start assessment: ${error.message}`); }
+        }
+        
+        function renderConversation() {
+            const currentQuestion = questionHistory[questionHistory.length - 1];
+            ui.assessment.conversationContainer.innerHTML = questionHistory.map(q => `
+                <div class="message message-bot"><div class="message-content"><p>${q.text}</p></div></div>
+                ${q.userAnswer ? `<div class="message message-user"><div class="message-content"><p>${q.userAnswer}</p></div></div>` : ''}`
+            ).join('');
+            ui.assessment.optionsContainer.innerHTML = currentQuestion.options.map(option => `<div class="option-btn" data-answer="${option}">${option}</div>`).join('');
+            const progress = Math.min(100, Math.round(((questionHistory.length - 1) / state.totalQuestions) * 100));
+            ui.assessment.progressPercent.textContent = `${progress}%`;
+            ui.assessment.progressFill.style.width = `${progress}%`;
+            ui.assessment.conversationContainer.scrollTop = ui.assessment.conversationContainer.scrollHeight;
+        }
+
+        async function handleOptionSelect(e) {
+            if (!e.target.matches('.option-btn')) return;
+            const answer = e.target.dataset.answer;
+            const currentQuestion = questionHistory[questionHistory.length - 1];
+            currentQuestion.userAnswer = answer;
+            try {
+                const data = await apiCall(`/assessments/${state.currentSessionId}/answer`, 'POST', { questionId: currentQuestion.id, answer });
+                if (data.is_complete) {
+                    alert("Assessment Complete!");
+                    renderEmployeeDashboard();
+                    showScreen('employee-dashboard');
+                } else {
+                    questionHistory.push(data.next_question);
+                    renderConversation();
+                }
+            } catch (error) { alert(`Error submitting answer: ${error.message}`); }
+        }
+        const uiReport = {
+            screen: document.getElementById('report-screen'),
+            date: document.getElementById('report-date'),
+            score: document.getElementById('report-score'),
+            summary: document.getElementById('report-summary'),
+            backBtn: document.getElementById('back-to-dashboard-btn'),
+        };
+
+        async function viewReport(sessionId) {
+            if (!sessionId) return;
+            try {
+                const data = await apiCall(`/assessments/${sessionId}/report`);
+                const report = data.report;
+
+                // --- Populate Header ---
+                document.getElementById('report-date').textContent = new Date(report.created_at).toLocaleDateString();
+                document.getElementById('report-user-name').textContent = report.user_name;
+
+                // --- Populate Overall Score & Risk ---
+                const scoreEl = document.getElementById('report-score');
+                const riskEl = document.getElementById('report-risk-level');
+                scoreEl.textContent = `${report.overall_score}%`;
+                if (report.overall_score >= 80) { riskEl.textContent = 'Low Risk'; riskEl.className = 'font-bold text-lg text-green-600'; }
+                else if (report.overall_score >= 50) { riskEl.textContent = 'Moderate Risk'; riskEl.className = 'font-bold text-lg text-yellow-600'; }
+                else { riskEl.textContent = 'High Risk'; riskEl.className = 'font-bold text-lg text-red-600'; }
+
+                // --- Populate Category Scores ---
+                const categoryScoresContainer = document.getElementById('report-category-scores');
+                categoryScoresContainer.innerHTML = Object.entries(report.category_scores).map(([name, score]) => `
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-gray-600 capitalize">${name}</span><span class="font-semibold">${score}%</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${score}%"></div></div>
+                    </div>
+                `).join('');
+
+                // --- Populate Behavioral Patterns ---
+                const patternsContainer = document.getElementById('report-behavioral-patterns');
+                patternsContainer.innerHTML = Object.keys(report.behavioral_patterns).length > 0 
+                    ? Object.entries(report.behavioral_patterns).map(([name, value]) => `
+                        <div class="flex items-center"><i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                            <div><div class="font-semibold capitalize">${name.replace(/([A-Z])/g, ' $1')}</div><div class="text-sm text-gray-500">Vulnerability detected</div></div>
+                        </div>`).join('')
+                    : `<p class="text-gray-500 col-span-2">No significant negative behavioral patterns were detected.</p>`;
+
+                // --- Populate Recommendations ---
+                const recommendationsContainer = document.getElementById('report-recommendations');
+                recommendationsContainer.innerHTML = report.recommendations.map(rec => {
+                    let color = 'blue';
+                    if (rec.priority === 'critical') color = 'red';
+                    if (rec.priority === 'important') color = 'yellow';
+                    return `<div class="p-4 rounded-lg border-l-4 border-${color}-500 bg-${color}-50">
+                                <div class="font-semibold capitalize">${rec.priority}</div>
+                                <p class="text-gray-700">${rec.text}</p>
+                            </div>`;
+                }).join('');
+
+                // --- Populate Strengths ---
+                const strengthsContainer = document.getElementById('report-strengths');
+                strengthsContainer.innerHTML = report.strengths.map(s => `<li>${s}</li>`).join('');
+
+                showScreen('report-screen');
+            } catch (error) {
+                alert(`Could not load report: ${error.message}`);
             }
         }
-    
-        // --- NEW: Assign Assessment Function ---
-        async function assignAssessment() {
-            const email = document.getElementById('assign-employee').value;
-            const dueDate = document.getElementById('due-date').value;
+        
+        function initializeApp() {
+            ui.login.loginBtn.addEventListener('click', handleLogin);
+            ui.logoutBtn.addEventListener('click', handleLogout);
+            ui.admin.assignBtn.addEventListener('click', handleAssignAssessment);
+            ui.assessment.optionsContainer.addEventListener('click', handleOptionSelect);
+            uiReport.backBtn.addEventListener('click', () => {
+                renderEmployeeDashboard(); // Refresh dashboard
+                showScreen('employee-dashboard');
+            });
 
-            if (!email || !dueDate) {
-                alert('Please select employee and due date');
-                return;
-            }
-
-            try {
-                const response = await fetch('http://localhost:5000/api/assign', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ user_id: email, due_date: dueDate, assessment_type: 'standard' })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to assign assessment');
+            document.body.addEventListener('click', (e) => {
+                if (e.target.matches('.start-assessment-btn')) {
+                    const assignmentId = e.target.dataset.assignmentId;
+                    startAssessment(assignmentId);
                 }
-
-                alert(`Assessment assigned to ${email} due ${dueDate}`);
-                renderAdminDashboard(); // Refresh the table
-            } catch (err) {
-                console.error('Error assigning assessment:', err);
-                alert('Failed to assign assessment: ' + err.message);
-            }
+                if (e.target.matches('.view-report-btn')) {
+                    const sessionId = e.target.dataset.sessionId;
+                    viewReport(sessionId);
+                }
+            });
         }
+                
+        initializeApp();
     </script>
 </body>
 </html>

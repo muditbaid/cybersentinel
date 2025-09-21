@@ -6,12 +6,21 @@
   "scripts": {
     "start": "python -m http.server 3000",
     "serve": "python -m http.server 3000",
-    "dev": "python -m http.server 3000"
+    "dev": "python -m http.server 3000",
+    "start:all": "concurrently \"npm:start\" \"cd cybersentinel-backend && npm run dev\""
   },
-  "keywords": ["cybersecurity", "assessment", "corporate", "security"],
+  "keywords": [
+    "cybersecurity",
+    "assessment",
+    "corporate",
+    "security"
+  ],
   "author": "CyberSentinel Team",
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
