@@ -1,0 +1,10 @@
+Screens:
+1. login-screen → Authenticates user
+2. admin-dashboard → Assign assessments, view team
+3. employee-dashboard → View assigned work, past reports
+4. conversation-screen → Take assessment
+5. report-screen → View results
+
+User Flow:
+- Admin logs in → sees team dashboard → assigns assessments
+- Employee logs in → sees personal dashboard → starts assigned assessment → gets report

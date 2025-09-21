@@ -1,0 +1,10 @@
+﻿Method,Endpoint,Description
+POST,/api/auth/login,Returns JWT + user profile
+GET,/api/dashboard/employee,Returns assigned assessments + past reports
+GET,/api/dashboard/admin,Returns team stats + pending assignments
+POST,/api/assessments/start,"Creates session, returns first question"
+POST,/api/assessments/:id/answer,"Submits answer, returns next question"
+GET,/api/reports/:id,Returns generated report
+POST,/api/assessments/assign,Admin assigns assessment to user
+GET,/api/questions/latest,Returns active question set (filtered by role)
+POST,/api/llm/sync-questions,(Admin-only) Triggers LLM question update

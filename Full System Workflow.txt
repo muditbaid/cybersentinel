@@ -1,0 +1,137 @@
+┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│                      │     │                      │     │                      │
+│   USER (EMPLOYEE)    │     │      ADMIN USER      │     │      LLM SERVICE     │
+│                      │     │                      │     │ (OpenAI/Claude/etc.) │
+└──────────┬───────────┘     └──────────┬───────────┘     └──────────┬───────────┘
+           │                            │                            │
+           │ 1. Navigate to App         │ 1. Navigate to App        │
+           │                            │                            │
+           ▼                            ▼                            │
+┌──────────────────────┐     ┌──────────────────────┐               │
+│                      │     │                      │               │
+│   LOGIN SCREEN       │◀────┤   LOGIN SCREEN       │               │
+│   (Frontend SPA)     │     │   (Frontend SPA)     │               │
+└──────────┬───────────┘     └──────────┬───────────┘               │
+           │                            │                           │
+           │ 2. Submit Credentials      │ 2. Submit Credentials     │
+           │ (email + password)         │ (email + password)        │
+           ▼                            ▼                           │
+┌──────────────────────┐     ┌──────────────────────┐               │
+│                      │     │                      │               │
+│   AUTH API ENDPOINT  │     │   AUTH API ENDPOINT  │               │
+│   POST /api/auth/login│     │   POST /api/auth/login│              │
+│   (Backend Server)   │     │   (Backend Server)   │               │
+└──────────┬───────────┘     └──────────┬───────────┘               │
+           │                            │                           │
+           │ 3. Validate → JWT Token    │ 3. Validate → JWT Token   │
+           │    + User Role (employee)  │    + User Role (admin)    │
+           ▼                            ▼                           │
+┌──────────────────────┐     ┌──────────────────────┐               │
+│                      │     │                      │               │
+│   REDIRECT TO        │     │   REDIRECT TO        │               │
+│   EMPLOYEE DASHBOARD │     │   ADMIN DASHBOARD    │               │
+│   (Frontend)         │     │   (Frontend)         │               │
+└──────────┬───────────┘     └──────────┬───────────┘               │
+           │                            │                           │
+           │ 4a. View Assigned          │ 4b. View Team Stats       │
+           │    Assessments             │    + Assign New           │
+           │                            │       Assessments         │
+           ▼                            ▼                           │
+┌──────────────────────┐     ┌──────────────────────┐               │
+│                      │     │                      │               │
+│   START ASSESSMENT   │     │   ASSIGN ASSESSMENT  │               │
+│   (Click "Start")    │     │   (Select User + Due │               │
+│                      │     │    Date → POST)      │               │
+└──────────┬───────────┘     └──────────┬───────────┘               │
+           │                            │                           │
+           │ 5. POST /api/assessments/start │ 5. POST /api/assessments/assign │
+           │    { user_id, role }       │    { user_id, due_date }  │
+           ▼                            ▼                           │
+┌──────────────────────┐     ┌──────────────────────┐               │
+│                      │     │                      │               │
+│   BACKEND: Create    │     │   BACKEND: Create    │               │
+│   Assessment Session │     │   Assignment Record  │               │
+│   + Return First Q   │     │   in DB              │               │
+└──────────┬───────────┘     └──────────┬───────────┘               │
+           │                            │                           │
+           │ 6. Render Question          │ 6. Update Dashboard       │
+           │    (Adaptive)               │    + Notify User (Email)  │
+           ▼                            │                           │
+┌──────────────────────┐                │                           │
+│                      │                │                           │
+│   USER SELECTS       │                │                           │
+│   ANSWER → POST      │                │                           │
+│   /api/assessments/:id/answer │                │                           │
+│                      │                │                           │
+└──────────┬───────────┘                │                           │
+           │                            │                           │
+           │ 7. Backend: Apply Logic →  │                           │
+           │    Determine Next Question │                           │
+           │    Update Pattern Scores   │                           │
+           │    (Based on Role/Industry)│                           │
+           ▼                            │                           │
+┌──────────────────────┐                │                           │
+│                      │                │                           │
+│   RENDER NEXT Q      │                │                           │
+│   (Repeat Until End) │                │                           │
+└──────────┬───────────┘                │                           │
+           │                            │                           │
+           │ 8. Final Answer → Generate │                           │
+           │    Report on Backend       │                           │
+           ▼                            │                           │
+┌──────────────────────┐                │                           │
+│                      │                │                           │
+│   BACKEND: Calculate │                │                           │
+│   Scores + Generate  │                │                           │
+│   JSON Report        │                │                           │
+└──────────┬───────────┘                │                           │
+           │                            │                           │
+           │ 9. Store Report in DB      │                           │
+           │    + Return to Frontend    │                           │
+           ▼                            │                           │
+┌──────────────────────┐                │                           │
+│                      │                │                           │
+│   REPORT SCREEN      │                │                           │
+│   (Frontend Renders  │                │                           │
+│    Scores, Patterns, │                │                           │
+│    Recommendations)  │                │                           │
+└──────────┬───────────┘                │                           │
+           │                            │                           │
+           │ 10. Optional: Export PDF   │                           │
+           │     Email Report           │                           │
+           │     Start Remediation      │                           │
+           ▼                            ▼                           │
+┌──────────────────────┐     ┌──────────────────────┐               │
+│                      │     │                      │               │
+│   USER DASHBOARD     │◀────┤   ADMIN DASHBOARD    │               │
+│   (Updated with      │     │   (Updated with      │               │
+│    New Report)       │     │    Assignment Status)│               │
+└──────────┬───────────┘     └──────────────────────┘               │
+           │                                                        │
+           │                                                        │
+           │ 11. Periodic LLM Sync (Cron Job)                       │
+           │    ┌───────────────────────────────────────────────────┘
+           │    ▼
+┌──────────────────────┐
+│                      │
+│   LLM INTEGRATION    │
+│   SERVICE (Backend)  │
+│   - Fetches latest   │
+│     threat intel     │
+│   - Generates new    │
+│     questions        │
+│   - Rewrites patterns│
+│   - Pushes to DB     │
+│     as new version   │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│                      │
+│   QUESTION DB        │
+│   (PostgreSQL/Mongo) │
+│   - Versioned        │
+│   - Tagged by role,  │
+│     industry, threat │
+│   - Active flag      │
+└──────────────────────┘

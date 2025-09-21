@@ -1,0 +1,44 @@
+User
+├── id
+├── name
+├── email
+├── company_id
+└── created_at
+
+AssessmentSession
+├── id
+├── user_id
+├── industry
+├── job_role
+├── started_at
+├── completed_at
+└── status
+
+Answer
+├── id
+├── session_id
+├── question_id
+├── answer_text
+└── timestamp
+
+Report
+├── id
+├── session_id
+├── overall_score
+├── technical_score
+├── behavioral_score
+├── psychological_score
+├── risk_level
+├── generated_at
+└── json_data (full report snapshot)
+
+Question (managed via LLM)
+├── id
+├── text
+├── options []
+├── category
+├── next_logic (JSON or script)
+├── patterns {}
+├── industry_tags []
+├── role_tags []
+└── active_version
