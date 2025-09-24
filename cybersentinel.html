@@ -90,22 +90,76 @@
       
     
     <main class="flex-1 flex items-center justify-center p-4 py-8">
-        <div id="login-screen" class="screen active w-full max-w-md mx-auto flex-col justify-center">
+        <!-- Hero / Start -->
+        <section id="pre-hero" class="screen active w-full max-w-2xl mx-auto flex-col justify-center">
+            <div class="card p-8 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
+                <i class="fa fa-shield-alt text-blue-600 text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold mb-2">Cyber Shield™</h1>
+            <p class="text-gray-600 mb-6">AAAS – Assessment as a Service</p>
+            <p class="text-sm text-gray-500 mb-8">by Cyber Posture LLC</p>
+            <button id="hero-start" class="btn btn-primary">Start Assessment</button>
+            </div>
+        </section>
+        
+        <!-- Consent -->
+        <section id="pre-consent" class="screen hidden w-full max-w-3xl mx-auto flex-col justify-center">
             <div class="card p-8">
-                <div class="text-center mb-8">
-                    <div class="w-16 h-16 rounded-xl bg-blue-600 flex items-center justify-center mx-auto mb-4"><i class="fas fa-shield-alt text-white text-2xl"></i></div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">CyberShield Sentinel</h1>
-                    <p class="text-gray-600">Corporate Security Assessment Platform</p>
-                </div>
-                <div id="login-error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert">
-                  <strong class="font-bold">Login Failed!</strong><span class="block sm:inline" id="login-error-message"></span>
-                </div>
-                <div class="mb-6"><label class="block text-gray-700 font-medium mb-2">Email</label><input type="email" id="login-email" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="you@company.com"></div>
-                <div class="mb-6"><label class="block text-gray-700 font-medium mb-2">Password</label><input type="password" id="login-password" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="••••••••"></div>
-                <button id="login-btn" class="btn btn-primary w-full mb-4">Sign In <i class="fas fa-arrow-right ml-2"></i></button>
-                <div class="text-center"><p class="text-sm text-gray-600">Demo Credentials:</p><p class="text-xs text-gray-500 mt-1">Admin: admin@company.com / password<br>Employee: john@company.com / password</p></div>
+            <h2 class="text-2xl font-bold mb-4">Before We Begin</h2>
+            <ul class="space-y-3 text-gray-700 mb-6">
+                <li><b>We assess behavior — not identity.</b> No sensitive PII required.</li>
+                <li><b>Data Usage & Privacy.</b> GDPR/CCPA aligned. Anonymized analytics improve risk models.</li>
+                <li><b>Disclaimer.</b> Educational tool; not a formal technical audit.</li>
+            </ul>
+            <label class="flex items-start gap-3 mb-6">
+                <input id="consent-check" type="checkbox" class="mt-1">
+                <span>I have read and agree to the terms.</span>
+            </label>
+            <div class="flex justify-end gap-2">
+                <button class="btn btn-secondary" id="consent-back">Back</button>
+                <button class="btn btn-primary" id="consent-next" disabled>Proceed</button>
+            </div>
+            </div>
+        </section>
+        
+        <!-- Track selection -->
+        <section id="pre-track" class="screen hidden w-full max-w-4xl mx-auto flex-col justify-center">
+            <div class="card p-8">
+            <h2 class="text-3xl font-bold text-center mb-2">Choose Your Assessment Track</h2>
+            <p class="text-gray-600 text-center mb-6">Select your context to personalize the 10-minute assessment.</p>
+            <div class="grid md:grid-cols-2 gap-4">
+                <button id="track-personal" class="p-5 rounded-2xl border hover:border-blue-300 bg-blue-50 text-left">
+                <div class="flex items-center gap-3 mb-2"><i class="fa fa-user-shield text-blue-600"></i><b>Personal Track</b></div>
+                <p class="text-gray-600 text-sm">Home IoT, cloud storage, smart devices, data habits.</p>
+                </button>
+                <button id="track-corporate" class="p-5 rounded-2xl border hover:border-purple-300 bg-purple-50 text-left">
+                <div class="flex items-center gap-3 mb-2"><i class="fa fa-building-shield text-purple-600"></i><b>Corporate Track</b></div>
+                <p class="text-gray-600 text-sm">Workplace tools, policy, corporate data handling.</p>
+                </button>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button class="btn btn-secondary" id="track-back">Back</button>
+            </div>
+            </div>
+        </section>
+        
+        <div id="login-screen" class="screen hidden w-full max-w-md mx-auto flex-col justify-center">
+            <div class="card p-8">
+              <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold mb-2">Personalization & Tracking</h2>
+                <p class="text-gray-600">Enter details to sign in and personalize your experience.</p>
+              </div>
+              <div id="login-error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden">
+                <strong class="font-bold">Login Failed!</strong> <span id="login-error-message"></span>
+              </div>
+              <div class="mb-4"><input type="email" id="login-email" class="w-full p-3 border rounded-lg" placeholder="Email or Employee ID" required></div>
+              <div class="mb-4"><input type="password" id="login-password" class="w-full p-3 border rounded-lg" placeholder="Password" required></div>
+              <div class="mb-6"><input type="text" id="login-firstname" class="w-full p-3 border rounded-lg" placeholder="First Name (optional)"></div>
+              <button id="login-btn" class="btn btn-primary w-full">Continue</button>
             </div>
         </div>
+          
 
         <div id="admin-dashboard" class="screen w-full max-w-6xl mx-auto flex-col">
             <div class="card p-8">
@@ -304,38 +358,72 @@
         }
         
         function showScreen(screenId) {
-            ui.screens.forEach(screen => screen.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+            // activate target
+            ui.screens.forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(screenId);
+            if (target) target.classList.add('active');
             state.currentScreen = screenId;
 
-            const onLogin = screenId === 'login-screen';
-            ui.navbar.classList.toggle('hidden', onLogin);
+            // hide navbar on pre-login screens
+            const preScreens = ['pre-hero', 'pre-consent', 'pre-track', 'login-screen'];
+            const hideNavbar = preScreens.includes(screenId);
+            if (ui.navbar) ui.navbar.classList.toggle('hidden', hideNavbar);
 
-            // Nav active pills
-            if (screenId === 'admin-dashboard') setNavbarActive('nav-admin');
+            // nav pill active state
+            if (screenId === 'admin-dashboard')       setNavbarActive('nav-admin');
             else if (screenId === 'employee-dashboard') setNavbarActive('nav-assessments');
-            else if (screenId === 'report-screen') setNavbarActive('nav-reports');
-            else setNavbarActive('nav-home');
+            else if (screenId === 'report-screen')      setNavbarActive('nav-reports');
+            else                                        setNavbarActive('nav-home');
 
-            // Exit visible only on assessment
+            // show Exit buttons only during assessment
             setExitVisible(screenId === 'conversation-screen');
         }
 
+        // Hero
+        document.getElementById('hero-start').addEventListener('click', ()=> showScreen('pre-consent'));
 
+        // Consent
+        const consentCheck = document.getElementById('consent-check');
+        const consentNext = document.getElementById('consent-next');
+        consentCheck.addEventListener('change', ()=> consentNext.disabled = !consentCheck.checked);
+        document.getElementById('consent-back').addEventListener('click', ()=> showScreen('pre-hero'));
+        consentNext.addEventListener('click', ()=> showScreen('pre-track'));
+
+        // Track selection
+        let selectedTrack = null;
+        document.getElementById('track-back').addEventListener('click', ()=> showScreen('pre-consent'));
+        document.getElementById('track-personal').addEventListener('click', ()=> { selectedTrack='personal'; showScreen('login-screen'); });
+        document.getElementById('track-corporate').addEventListener('click', ()=> { selectedTrack='corporate'; showScreen('login-screen'); });
+
+
+        // Modify handleLogin to capture firstName & track
         async function handleLogin() {
             const email = ui.login.emailInput.value.trim();
             const password = ui.login.passwordInput.value;
+            const firstName = document.getElementById('login-firstname').value.trim();
             ui.login.error.classList.add('hidden');
-            if (!email || !password) { ui.login.errorMessage.textContent = 'Please enter both email and password.'; ui.login.error.classList.remove('hidden'); return; }
+
+            if (!email || !password) {
+                ui.login.errorMessage.textContent = 'Please enter both email and password.';
+                ui.login.error.classList.remove('hidden'); return;
+            }
+
             try {
                 const data = await apiCall('/auth/login', 'POST', { email, password });
                 state.token = data.token; state.user = data.user;
-                ui.navUserName.textContent = state.user.name;
+                if (firstName) state.user.firstName = firstName;
+                if (selectedTrack) state.user.track = selectedTrack;
+
+                ui.navUserName.textContent = state.user.name || firstName || email;
                 setNavbarRoleVisibility();
-                if (state.user.role === 'admin') { renderAdminDashboard(); showScreen('admin-dashboard'); } 
+                if (state.user.role === 'admin') { renderAdminDashboard(); showScreen('admin-dashboard'); }
                 else { renderEmployeeDashboard(); showScreen('employee-dashboard'); }
-            } catch (err) { ui.login.errorMessage.textContent = err.message; ui.login.error.classList.remove('hidden'); }
+            } catch (err) {
+                ui.login.errorMessage.textContent = err.message;
+                ui.login.error.classList.remove('hidden');
+            }
         }
+
         
         function handleLogout() {
             state.token = null; state.user = null;
