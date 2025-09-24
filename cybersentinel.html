@@ -33,19 +33,61 @@
         .status-completed { background-color: #dcfce7; color: #166534; }
         .status-pending { background-color: #ffedd5; color: #9a3412; }
         .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+        /* Viewport-safe height on mobile toolbars */
+        :root { --vh: 1vh; }
+        @media (hover: none) and (pointer: coarse) {
+            :root { --vh: 1vh; } /* will be set by JS */
+        }
+
+        /* Chat layout helpers */
+        .cs-card { display:flex; flex-direction:column; min-height: min(88vh, 100svh - 140px); }
+        .cs-scroll { flex:1 1 auto; min-height:0; overflow:auto; }
+        .cs-bottom { position:sticky; bottom:0; padding-top:.5rem; background:linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 40%); }
+        .cs-inline { display:none; }
+        .cs-inline.show { display:block; }
+
+        /* Navbar improvements */
+        .nav-pill { 
+            padding: 0.5rem 0.75rem; 
+            border-radius: 0.5rem; 
+            font-size: 0.875rem; 
+            font-weight: 500; 
+            border: 1px solid transparent; 
+        }
+        .nav-pill:hover { 
+            border-color: #dbeafe; 
+            background-color: #eff6ff; 
+        }
+        .nav-pill.active { 
+            border-color: #93c5fd; 
+            background-color: #eff6ff; 
+            color: #1d4ed8; 
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-    <nav id="navbar" class="bg-white shadow-sm py-4 px-6 flex justify-between items-center hidden">
+    <nav id="navbar" class="bg-white/90 backdrop-blur shadow-sm py-3 px-4 md:px-6 flex justify-between items-center hidden sticky top-0 z-30">
         <div class="flex items-center">
-            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3"><i class="fas fa-shield-alt text-white text-lg"></i></div>
-            <h1 class="text-xl font-bold text-blue-600">CyberShield Sentinel</h1>
+          <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3"><i class="fas fa-shield-alt text-white text-lg"></i></div>
+          <h1 class="text-lg md:text-xl font-bold text-blue-600">CyberShield Sentinel</h1>
         </div>
-        <div class="flex items-center space-x-4">
-            <span id="nav-user-name" class="text-gray-700 font-medium"></span>
-            <button id="logout-btn" class="text-gray-600 hover:text-blue-600"><i class="fas fa-sign-out-alt"></i><span class="hidden md:inline ml-1">Logout</span></button>
+      
+        <div class="hidden md:flex items-center gap-2" id="nav-links">
+          <button id="nav-home" class="nav-pill">Home</button>
+          <button id="nav-assessments" class="nav-pill">Assessments</button>
+          <button id="nav-reports" class="nav-pill">Reports</button>
+          <button id="nav-admin" class="nav-pill hidden">Admin</button>
+          <button id="nav-exit" class="nav-pill text-red-600 border-red-200 hover:bg-red-50 hidden">Exit</button>
+        </div>
+      
+        <div class="flex items-center space-x-3">
+          <span id="nav-user-name" class="text-gray-700 font-medium"></span>
+          <button id="logout-btn" class="text-gray-600 hover:text-blue-600 flex items-center gap-1">
+            <i class="fas fa-sign-out-alt"></i><span class="hidden md:inline">Logout</span>
+          </button>
         </div>
     </nav>
+      
     
     <main class="flex-1 flex items-center justify-center p-4 py-8">
         <div id="login-screen" class="screen active w-full max-w-md mx-auto flex-col justify-center">
@@ -109,14 +151,41 @@
         </div>
 
         <div id="conversation-screen" class="screen w-full max-w-2xl mx-auto flex-col justify-center">
-            <div class="card p-8">
-                <div class="flex items-center justify-between mb-6"><h2 class="text-xl font-bold text-gray-800">Security Assessment</h2>
-                    <div class="w-40"><div class="text-xs text-gray-600 text-right mb-1"><span id="progress-percent">0%</span> Complete</div><div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width: 0%"></div></div></div>
+            <div class="card p-0 cs-card">
+              <!-- header row inside the card -->
+              <div class="flex items-center justify-between px-6 pt-5">
+                <h2 class="text-xl font-bold text-gray-800">Security Assessment</h2>
+                <div class="w-40">
+                  <div class="text-xs text-gray-600 text-right mb-1"><span id="progress-percent">0%</span> Complete</div>
+                  <div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width: 0%"></div></div>
                 </div>
-                <div class="conversation-container" id="conversation-container"></div>
-                <div id="options-container" class="flex flex-wrap justify-center mb-4"></div>
+              </div>
+          
+              <!-- inline notice (in-UI messages like “Exited…”) -->
+              <div id="cs-inline" class="cs-inline px-6 mt-3">
+                <div id="cs-inline-box" class="rounded-lg border border-blue-200 bg-blue-50 text-blue-800 px-4 py-3 text-sm"></div>
+              </div>
+          
+              <!-- scrollable conversation area -->
+              <div class="conversation-container cs-scroll px-6" id="conversation-container"></div>
+          
+              <!-- options + sticky bottom controls -->
+              <div class="cs-bottom px-6 pb-5">
+                <div id="options-container" class="flex flex-wrap justify-center mb-3"></div>
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <button id="btn-back" class="btn btn-secondary"><i class="fa fa-chevron-left mr-1"></i>Back</button>
+                    <button id="btn-skip" class="btn btn-secondary">Skip</button>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button id="btn-exit" class="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100">Exit</button>
+                    <button id="btn-next" class="btn btn-primary">Next<i class="fa fa-chevron-right ml-1"></i></button>
+                  </div>
+                </div>
+              </div>
             </div>
         </div>
+          
         <div id="report-screen" class="screen w-full max-w-4xl mx-auto flex-col">
             <div class="card p-8">
                 <div class="text-center mb-8">
@@ -161,10 +230,25 @@
         </div>
         
     </main>
-    
+    <!-- Exit confirm modal -->
+    <div id="exit-modal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-40">
+        <div class="bg-white rounded-xl shadow-xl border border-gray-200 w-[92vw] max-w-md p-5">
+        <h3 class="text-lg font-semibold text-gray-900 mb-1">Exit assessment?</h3>
+        <p class="text-sm text-gray-600 mb-4">Your progress will be saved. You can resume anytime from your dashboard.</p>
+        <div class="flex justify-end gap-2">
+            <button id="exit-cancel" class="btn btn-secondary">Cancel</button>
+            <button id="exit-confirm" class="btn bg-red-600 text-white">Exit</button>
+        </div>
+        </div>
+    </div>
+  
+    </body>
     <script>
         const state = { currentScreen: 'login-screen', user: null, token: null, currentSessionId: null, totalQuestions: 10 };
         const API_BASE_URL = 'http://localhost:5000/api';
+        // viewport-safe height for mobile browsers
+        function setVH() { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); }
+        window.addEventListener('resize', setVH); setVH();
 
         const ui = {
             screens: document.querySelectorAll('.screen'),
@@ -176,6 +260,38 @@
             assessment: { screen: document.getElementById('conversation-screen'), conversationContainer: document.getElementById('conversation-container'), optionsContainer: document.getElementById('options-container'), progressPercent: document.getElementById('progress-percent'), progressFill: document.getElementById('progress-fill'), },
             logoutBtn: document.getElementById('logout-btn'),
         };
+        function showInline(msg, tone='info') {
+        const box = document.getElementById('cs-inline-box');
+        const wrap = document.getElementById('cs-inline');
+        const palette = {
+            info:  { bg:'bg-blue-50',  border:'border-blue-200', text:'text-blue-800' },
+            warn:  { bg:'bg-yellow-50',border:'border-yellow-200',text:'text-yellow-800' },
+            danger:{ bg:'bg-red-50',   border:'border-red-200',   text:'text-red-800' },
+            good:  { bg:'bg-green-50', border:'border-green-200', text:'text-green-800' }
+        }[tone] || { bg:'bg-blue-50', border:'border-blue-200', text:'text-blue-800' };
+
+        box.className = `rounded-lg ${palette.border} ${palette.bg} ${palette.text} px-4 py-3 text-sm`;
+        box.textContent = msg;
+        wrap.classList.add('show');
+        }
+
+        function setNavbarActive(id) {
+        document.querySelectorAll('#nav-links .nav-pill').forEach(b=>b.classList.remove('active'));
+        const el = document.getElementById(id); if (el) el.classList.add('active');
+        }
+
+        function setNavbarRoleVisibility() {
+        // show Admin link only for admins
+        const adminBtn = document.getElementById('nav-admin');
+        if (state.user?.role === 'admin') adminBtn.classList.remove('hidden');
+        else adminBtn.classList.add('hidden');
+        }
+
+        function setExitVisible(isVisible) {
+        const exitTop = document.getElementById('nav-exit');
+        const exitBottom = document.getElementById('btn-exit');
+        [exitTop, exitBottom].forEach(el => el?.classList.toggle('hidden', !isVisible));
+        }
 
         async function apiCall(endpoint, method = 'GET', body = null) {
             const headers = { 'Content-Type': 'application/json' };
@@ -191,8 +307,20 @@
             ui.screens.forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             state.currentScreen = screenId;
-            ui.navbar.classList.toggle('hidden', screenId === 'login-screen');
+
+            const onLogin = screenId === 'login-screen';
+            ui.navbar.classList.toggle('hidden', onLogin);
+
+            // Nav active pills
+            if (screenId === 'admin-dashboard') setNavbarActive('nav-admin');
+            else if (screenId === 'employee-dashboard') setNavbarActive('nav-assessments');
+            else if (screenId === 'report-screen') setNavbarActive('nav-reports');
+            else setNavbarActive('nav-home');
+
+            // Exit visible only on assessment
+            setExitVisible(screenId === 'conversation-screen');
         }
+
 
         async function handleLogin() {
             const email = ui.login.emailInput.value.trim();
@@ -203,6 +331,7 @@
                 const data = await apiCall('/auth/login', 'POST', { email, password });
                 state.token = data.token; state.user = data.user;
                 ui.navUserName.textContent = state.user.name;
+                setNavbarRoleVisibility();
                 if (state.user.role === 'admin') { renderAdminDashboard(); showScreen('admin-dashboard'); } 
                 else { renderEmployeeDashboard(); showScreen('employee-dashboard'); }
             } catch (err) { ui.login.errorMessage.textContent = err.message; ui.login.error.classList.remove('hidden'); }
@@ -277,15 +406,49 @@
                 
         let questionHistory = [];
         async function startAssessment(assignmentId) {
-            if (!assignmentId) return alert('Invalid assignment selected.');
+            if (!assignmentId) {
+                alert('Invalid assignment selected.');
+                return;
+            }
+            
             try {
+                console.log('Starting assessment for assignment:', assignmentId);
+                
                 const data = await apiCall('/assessments/start', 'POST', { assignmentId });
+                
+                console.log('API Response:', data);
+                
+                // Validate API response
+                if (!data.success) {
+                    throw new Error('API returned success: false');
+                }
+                
+                if (!data.session_id) {
+                    throw new Error('No session ID returned from API');
+                }
+                
+                if (!data.current_question) {
+                    throw new Error('No current question returned from API');
+                }
+                
+                if (!data.current_question.id) {
+                    throw new Error('Question is missing ID field');
+                }
+                
+                // All validations passed - proceed
                 state.currentSessionId = data.session_id;
                 questionHistory = [data.current_question];
+                
                 renderConversation();
-                // *** THIS IS THE CORRECTED LINE ***
+                document.getElementById('cs-inline')?.classList.remove('show');
+                setExitVisible(true);
+
                 showScreen('conversation-screen'); 
-            } catch (error) { alert(`Could not start assessment: ${error.message}`); }
+                
+            } catch (error) {
+                console.error('Assessment start error:', error);
+                alert(`Could not start assessment: ${error.message}`);
+            }
         }
         
         function renderConversation() {
@@ -307,11 +470,15 @@
             const currentQuestion = questionHistory[questionHistory.length - 1];
             currentQuestion.userAnswer = answer;
             try {
-                const data = await apiCall(`/assessments/${state.currentSessionId}/answer`, 'POST', { questionId: currentQuestion.id, answer });
+                const data = await apiCall(`/assessments/${state.currentSessionId}/answer`, 'POST', { 
+                    questionId: currentQuestion.id,
+                    answer_text: answer 
+                });
                 if (data.is_complete) {
-                    alert("Assessment Complete!");
-                    renderEmployeeDashboard();
+                    showInline('Assessment complete! Your report is now available in your dashboard.', 'good');
+                    await renderEmployeeDashboard();
                     showScreen('employee-dashboard');
+                    return;
                 } else {
                     questionHistory.push(data.next_question);
                     renderConversation();
@@ -407,7 +574,30 @@
                 }
             });
         }
-                
+        // Exit modal handlers
+        const exitModal = document.getElementById('exit-modal');
+        document.getElementById('btn-exit').addEventListener('click', ()=> exitModal.classList.remove('hidden'));
+        document.getElementById('nav-exit').addEventListener('click', ()=> exitModal.classList.remove('hidden'));
+        document.getElementById('exit-cancel').addEventListener('click', ()=> exitModal.classList.add('hidden'));
+        document.getElementById('exit-confirm').addEventListener('click', async ()=>{
+        exitModal.classList.add('hidden');
+        // OPTIONAL: persist exit/paused to backend
+        // await apiCall('/assessments/exit', 'POST', { session_id: state.currentSessionId });
+        showInline('You exited the assessment. Progress saved — resume any time from your dashboard.', 'info');
+        // Go back to employee dashboard
+        await renderEmployeeDashboard();
+        showScreen('employee-dashboard');
+        });
+
+        // Top nav pill routes
+        document.getElementById('nav-home').addEventListener('click', ()=> {
+        if (state.user?.role === 'admin') { renderAdminDashboard(); showScreen('admin-dashboard'); }
+        else { renderEmployeeDashboard(); showScreen('employee-dashboard'); }
+        });
+        document.getElementById('nav-assessments').addEventListener('click', ()=> { renderEmployeeDashboard(); showScreen('employee-dashboard'); });
+        document.getElementById('nav-reports').addEventListener('click', ()=> { renderEmployeeDashboard(); showScreen('employee-dashboard'); }); // or a reports screen if you add one
+        document.getElementById('nav-admin').addEventListener('click', ()=> { renderAdminDashboard(); showScreen('admin-dashboard'); });
+       
         initializeApp();
     </script>
 </body>

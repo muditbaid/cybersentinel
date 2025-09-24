@@ -18,12 +18,64 @@ function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Access token required' });
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
-    req.user = user;
-    next();
-  });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // ✅ Special case: service token
+    if (decoded && decoded.service === true && decoded.role === 'admin') {
+      req.user = decoded;
+      return next();
+    }
+
+    // ✅ Normal user token
+    req.user = decoded;
+    return next();
+  } catch (err) {
+    console.error('JWT verify failed:', err.message);
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
 }
+
+
+function defaultWeightsFor(question) {
+  const likert = ["Strongly disagree","Disagree","Neutral","Agree","Strongly agree"];
+  const isLikert = Array.isArray(question.options) && question.options.every(o => likert.includes(o));
+  const base = isLikert ? { "Strongly disagree": -10, "Disagree": -4, "Neutral": 0, "Agree": 4, "Strongly agree": 8 } : null;
+
+  const makeMap = () => {
+    const m = {};
+    for (const opt of question.options || []) {
+      m[opt] = base ? (base[opt] ?? 0) : 0;
+    }
+    return m;
+  };
+
+  return {
+    technical: question.category === "technical" ? makeMap() : {},
+    behavioral: question.category === "behavioral" ? makeMap() : {},
+    psychological: question.category === "psychological" ? makeMap() : {}
+  };
+}
+
+function coercePatterns(q) {
+  const p = q.patterns && typeof q.patterns === "object" ? q.patterns : {};
+  const weights = (p.weights && typeof p.weights === "object") ? p.weights : defaultWeightsFor(q);
+  const risk_tags = (p.risk_tags && typeof p.risk_tags === "object") ? p.risk_tags : {};
+  const critical = typeof p.critical === "boolean" ? p.critical : false;
+  const rationale = (p.rationale && typeof p.rationale === "object") ? p.rationale : {};
+
+  for (const cat of ["technical","behavioral","psychological"]) {
+    if (weights[cat] && Object.keys(weights[cat]).length) {
+      for (const opt of q.options || []) {
+        if (!(opt in weights[cat])) weights[cat][opt] = 0;
+      }
+    }
+  }
+
+  return { weights, risk_tags, critical, rationale };
+}
+
 
 // --- AUTHENTICATION ENDPOINT ---
 app.post('/api/auth/login', async (req, res) => {
@@ -95,7 +147,8 @@ app.post('/api/assessments/start', authenticateToken, async (req, res) => {
 
 app.post('/api/assessments/:sessionId/answer', authenticateToken, async (req, res) => {
   const { sessionId } = req.params;
-  const { questionId, answer } = req.body;
+  const { questionId, answer_text } = req.body;
+  const answer = answer_text;
   const userId = req.user.id;
   if (!questionId || !answer) {
     return res.status(400).json({ error: 'Question ID and answer are required' });
@@ -107,7 +160,7 @@ app.post('/api/assessments/:sessionId/answer', authenticateToken, async (req, re
       return res.status(404).json({ error: 'Active session for this user not found.' });
     }
 
-    await pool.query('INSERT INTO answers (session_id, question_id, answer_text) VALUES ($1, $2, $3)', [sessionId, questionId, answer]);
+    await pool.query('INSERT INTO answers (session_id, question_id, answer_text) VALUES ($1, $2, $3)', [sessionId, questionId, answer_text || answer]);
 
     // Get all questions already answered in this session
     const answeredQuestionsResult = await pool.query('SELECT question_id FROM answers WHERE session_id = $1', [sessionId]);
@@ -237,85 +290,182 @@ app.get('/api/employee/dashboard', authenticateToken, async (req, res) => {
 app.post('/api/llm/sync-questions', authenticateToken, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
   const updatedQuestions = req.body;
+
   try {
     let updateCount = 0;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       for (const [id, q] of Object.entries(updatedQuestions)) {
+        // ✅ Ensure patterns always exist
+        const safePatterns = coercePatterns(q);
+
         await client.query(
           `INSERT INTO questions (id, text, options, category, next_logic, patterns, version, is_active, tags, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, 1, TRUE, $7, NOW(), NOW())
            ON CONFLICT (id)
            DO UPDATE SET
-             text = EXCLUDED.text, options = EXCLUDED.options, category = EXCLUDED.category,
-             next_logic = EXCLUDED.next_logic, patterns = EXCLUDED.patterns, tags = EXCLUDED.tags,
-             version = questions.version + 1, updated_at = NOW()`,
-          [id, q.text, JSON.stringify(q.options), q.category, JSON.stringify(q.next_logic), JSON.stringify(q.patterns), JSON.stringify(q.tags)]
+             text = EXCLUDED.text,
+             options = EXCLUDED.options,
+             category = EXCLUDED.category,
+             next_logic = EXCLUDED.next_logic,
+             patterns = EXCLUDED.patterns,
+             tags = EXCLUDED.tags,
+             version = questions.version + 1,
+             updated_at = NOW()`,
+          [
+            id,
+            q.text,
+            JSON.stringify(q.options),
+            q.category,
+            JSON.stringify(q.next_logic || {}),
+            JSON.stringify(safePatterns),   // 👈 use coercePatterns result
+            JSON.stringify(q.tags || {})
+          ]
         );
         updateCount++;
       }
       await client.query('COMMIT');
-    } catch (e) { await client.query('ROLLBACK'); throw e; } 
-    finally { client.release(); }
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
     res.json({ success: true, message: `Synced ${updateCount} questions.` });
-  } catch (err) { console.error("LLM Sync Error:", err); res.status(500).json({ error: 'Failed to sync questions to database.' }); }
+  } catch (err) {
+    console.error("LLM Sync Error:", err);
+    res.status(500).json({ error: 'Failed to sync questions to database.' });
+  }
 });
 
-// --- HELPER FUNCTION ---
+
 async function generateReport(sessionId) {
   try {
+    // 1) Pull answers + question metadata
     const answersResult = await pool.query(
-      `SELECT q.category, q.patterns, a.answer_text 
-       FROM answers a 
-       JOIN questions q ON a.question_id = q.id 
+      `SELECT q.id, q.text, q.category, q.patterns, a.answer_text
+       FROM answers a
+       JOIN questions q ON a.question_id = q.id
        WHERE a.session_id = $1`,
       [sessionId]
     );
 
-    let categoryScores = { technical: 100, behavioral: 100, psychological: 100 };
-    let patterns = {};
-    let highRiskAnswers = [];
+    // 2) Baselines & setup
+    const BASELINE = { technical: 70, behavioral: 70, psychological: 70 };
+    const categoryScores = { ...BASELINE };
+    const categoryCounts = { technical: 0, behavioral: 0, psychological: 0 };
+    const riskTallies = {};          // { tagName: int }
+    const rationales = [];           // [{q, why}]
+    const impactsSeen = [];          // track impacts for consistency/variance
+    const NEG_MULTIPLIER_CRITICAL = 1.5;  // heavier penalty on critical Qs
+    const DAMPING = 0.85;            // reduce outsized impacts a bit
 
+    // 3) Per-answer scoring
     for (const row of answersResult.rows) {
-      if (row.patterns && typeof row.patterns === 'object') {
-        for (const [patternName, optionScores] of Object.entries(row.patterns)) {
-          const scoreImpact = optionScores[row.answer_text] || 0;
-          if (scoreImpact > 0) {
-              // Deduct points from the relevant category
-              if (categoryScores[row.category] !== undefined) {
-                  categoryScores[row.category] -= scoreImpact * 10; // Each point deducts 10
-              }
-              // Track this pattern
-              if (!patterns[patternName]) patterns[patternName] = 0;
-              patterns[patternName] += scoreImpact;
-              highRiskAnswers.push(patternName);
-          }
+      const { category, patterns, answer_text, text } = row;
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+
+      const p = (patterns && typeof patterns === 'object') ? patterns : {};
+      const weights = (p.weights && p.weights[category]) ? p.weights[category] : null;
+      let delta = 0;
+
+      if (weights && Object.prototype.hasOwnProperty.call(weights, answer_text)) {
+        delta = weights[answer_text];
+
+        // Critical questions penalize risky choices more
+        if (delta < 0 && p.critical) delta *= NEG_MULTIPLIER_CRITICAL;
+
+        // Apply damping to smooth extremes
+        delta = delta * DAMPING;
+
+        categoryScores[category] += delta;
+        impactsSeen.push(delta);
+      }
+
+      // Risk tags (behavioral patterns)
+      if (p.risk_tags && typeof p.risk_tags === 'object') {
+        for (const [tag, optionMap] of Object.entries(p.risk_tags)) {
+          const inc = optionMap[answer_text];
+          if (inc) riskTallies[tag] = (riskTallies[tag] || 0) + inc;
         }
       }
+
+      // Save rationale if configured for this option
+      if (p.rationale && p.rationale[answer_text]) {
+        rationales.push({ question: text, note: p.rationale[answer_text] });
+      }
     }
-    
-    // Ensure scores don't go below 0
-    Object.keys(categoryScores).forEach(key => {
-        categoryScores[key] = Math.max(0, categoryScores[key]);
-    });
 
-    const overallScore = Math.round((categoryScores.technical + categoryScores.behavioral + categoryScores.psychological) / 3);
+    // 4) Clamp 0..100
+    for (const k of Object.keys(categoryScores)) {
+      categoryScores[k] = Math.max(0, Math.min(100, categoryScores[k]));
+    }
 
-    // Generate dynamic recommendations and strengths
-    let recommendations = [];
-    if (categoryScores.technical < 70) recommendations.push({ priority: 'critical', text: "Review your device and password security practices. Consider using a password manager and enabling two-factor authentication." });
-    if (patterns['phishingAwareness']) recommendations.push({ priority: 'important', text: "Be cautious of unsolicited emails. Always verify urgent requests through a separate communication channel before acting." });
-    if (patterns['deviceSecurity']) recommendations.push({ priority: 'suggested', text: "Ensure all work devices, including personal ones, have up-to-date antivirus software and are locked when not in use."});
+    // 5) Overall & confidence
+    const categories = ["technical", "behavioral", "psychological"];
+    const answeredCats = categories.filter(c => categoryCounts[c] > 0);
+    const overallScore = Math.round(
+      (categories.reduce((s, c) => s + categoryScores[c], 0)) / categories.length
+    );
 
-    let strengths = [];
-    if (categoryScores.technical >= 90) strengths.push("Excellent technical security hygiene. You follow best practices for device and password management.");
-    if (!patterns['phishingAwareness']) strengths.push("Great phishing awareness. You correctly identify and handle suspicious emails.");
+    // Confidence considers coverage + impact variance
+    const coverage = answeredCats.length / categories.length; // 0..1
+    const variance =
+      impactsSeen.length > 1
+        ? (() => {
+            const mean = impactsSeen.reduce((a, b) => a + b, 0) / impactsSeen.length;
+            const v = impactsSeen.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (impactsSeen.length - 1);
+            return Math.min(1, Math.sqrt(v) / 10); // normalize ~0..1
+          })()
+        : 0.2;  // low data → lower confidence
 
-    const executiveSummary = `Your overall security score is ${overallScore}%. This assessment indicates your current level of cybersecurity awareness. The report below details your strengths and provides actionable recommendations for areas of improvement.`;
+    const confidence = Math.round(100 * Math.max(0.4, 0.9 * coverage - 0.3 * variance));
 
+    // 6) Recommendations (priority by tag weight + category weakness)
+    const recs = [];
+    const pushRec = (priority, text) => recs.push({ priority, text });
+
+    // Tag-driven
+    if (riskTallies.phishingAwareness >= 2) {
+      pushRec("critical", "Verify any urgent payment/reset requests via an out-of-band channel before acting.");
+    } else if (riskTallies.phishingAwareness === 1) {
+      pushRec("important", "Spend 10 minutes on anti-phishing drills this week; hover links and check domains.");
+    }
+    if (riskTallies.deviceSecurity >= 2) {
+      pushRec("important", "Enforce full-disk encryption and auto-lock on all endpoints, including BYOD.");
+    }
+
+    // Category-driven
+    if (categoryScores.technical < 70) {
+      pushRec("critical", "Adopt a password manager and enable MFA on email, VPN, and finance apps.");
+    }
+    if (categoryScores.behavioral < 70) {
+      pushRec("important", "Schedule quarterly phishing simulations and just-in-time micro-training.");
+    }
+    if (categoryScores.psychological < 70) {
+      pushRec("suggested", "Use ‘pause and verify’ for high-pressure requests; reduce single-person approvals.");
+    }
+
+    // Deduplicate by text
+    const uniqueRecs = Array.from(new Map(recs.map(r => [r.text, r])).values());
+
+    // 7) Strengths
+    const strengths = [];
+    if (categoryScores.technical >= 85) strengths.push("Solid device and credential hygiene.");
+    if (!riskTallies.phishingAwareness) strengths.push("Good phishing vigilance.");
+    if (categoryScores.behavioral >= 85) strengths.push("Consistent safe behaviors across scenarios.");
+
+    // 8) Executive summary + rationale note
+    const executiveSummary =
+      `Overall score ${overallScore}% (confidence ${confidence}%). `
+      + `Tech ${categoryScores.technical}%, Behavioral ${categoryScores.behavioral}%, Psychological ${categoryScores.psychological}%. `
+      + `Focus on the recommendations below to lower risk in the next 30 days.`;
+
+    // 9) Persist report
     await pool.query(
-      `INSERT INTO reports (session_id, overall_score, category_scores, behavioral_patterns, recommendations, strengths, executive_summary, created_at) 
+      `INSERT INTO reports (session_id, overall_score, category_scores, behavioral_patterns,
+                            recommendations, strengths, executive_summary, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        ON CONFLICT (session_id) DO UPDATE SET
          overall_score = EXCLUDED.overall_score,
@@ -325,14 +475,23 @@ async function generateReport(sessionId) {
          strengths = EXCLUDED.strengths,
          executive_summary = EXCLUDED.executive_summary,
          created_at = NOW()`,
-      [sessionId, overallScore, JSON.stringify(categoryScores), JSON.stringify(patterns), JSON.stringify(recommendations), JSON.stringify(strengths), executiveSummary]
+      [
+        sessionId,
+        overallScore,
+        JSON.stringify(categoryScores),
+        JSON.stringify(riskTallies),
+        JSON.stringify(uniqueRecs),
+        JSON.stringify(strengths),
+        executiveSummary
+      ]
     );
 
-    console.log(`✅ Rich report generated for session ${sessionId}`);
+    console.log(`✅ Scoring v2 report generated for session ${sessionId}`);
   } catch (err) {
-    console.error('❌ Error generating rich report:', err);
+    console.error('❌ Error generating report v2:', err);
   }
 }
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
