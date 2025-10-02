@@ -1,3 +1,5 @@
+const track = process.argv[2] || 'corporate';
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const axios = require('axios');
 require('dotenv').config();
@@ -13,10 +15,11 @@ function makeStableId(text) {
   return 'q-' + crypto.createHash('md5').update(text).digest('hex').slice(0, 12);
 }
 
-async function generateUpdatedQuestions() {
+async function generateUpdatedQuestions(track='corporate') {
   // *** THIS PROMPT HAS BEEN UPDATED ***
   const prompt = `
-    You are a cybersecurity training expert. Generate a series of corporate security assessment questions.
+    You are a cybersecurity training expert. You are a cybersecurity training expert. 
+    Generate a series of ${track === 'personal' ? 'personal/home-user' : 'corporate'} security assessment questions.
 
     OUTPUT RULES:
     1) Respond ONLY with a single valid JSON object. Do not include markdown, comments, or extra text.
@@ -35,6 +38,7 @@ async function generateUpdatedQuestions() {
         "critical": <true|false>,
         "rationale": { "<option>": "<short explanation>", ... }
       }
+      "tags": { "track": "${track}" }
     }
 
     3) Scoring guidance (use consistently):
@@ -44,6 +48,9 @@ async function generateUpdatedQuestions() {
     - Partially safe option: +2 to +5
     - Very safe / best practice option: +8 to +10
     - Only assign numbers within these bands.
+    - IMPORTANT: Every option MUST appear in the weights for at least one category. 
+      Do not leave any option without a weight. 
+      If an option is irrelevant to a category, assign 0 explicitly.
 
     4) Risk tags:
     - Use tags like phishingAwareness, deviceSecurity, identity, vendorRisk, remoteWork.
@@ -84,7 +91,7 @@ async function generateUpdatedQuestions() {
         }
       }
     }
-    NOW generate at least 5 more questions in this JSON format (with unique IDs).
+    NOW generate at least 15 more questions in this JSON format (with unique IDs).
   `;
 
   try {
@@ -168,7 +175,7 @@ async function syncQuestionsToAPI(questions) {
     for (const [qid, q] of Object.entries(questions)) {
       // Replace any random question-001 with deterministic hash
       const newId = makeStableId(q.text);
-      stableQuestions[newId] = { ...q };
+      stableQuestions[newId] = { ...q, tags: { ...(q.tags || {}), track }};
     }
 
     const adminToken = process.env.ADMIN_JWT_TOKEN;
@@ -194,4 +201,4 @@ async function syncQuestionsToAPI(questions) {
   }
 }
 
-generateUpdatedQuestions();
+generateUpdatedQuestions(track);

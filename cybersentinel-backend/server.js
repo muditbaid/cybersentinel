@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -12,6 +13,7 @@ app.use(express.json());
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
+
 
 // Middleware to verify JWT
 function authenticateToken(req, res, next) {
@@ -75,6 +77,47 @@ function coercePatterns(q) {
 
   return { weights, risk_tags, critical, rationale };
 }
+// --- Helpers ---
+async function ensureQuarterlyPersonalAssignment(userId) {
+  try {
+    const latest = await pool.query(
+      `SELECT assignment_id, status, created_at
+       FROM assignments
+       WHERE user_id = $1 AND assessment_type = 'personal'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (latest.rows.length === 0) {
+      const due = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      await pool.query(
+        `INSERT INTO assignments (user_id, due_date, assessment_type, status)
+         VALUES ($1, $2, 'personal', 'pending')`,
+        [userId, due]
+      );
+      return;
+    }
+
+    const row = latest.rows[0];
+    if (row.status === 'pending' || row.status === 'in_progress') return;
+
+    // If last personal assessment is older than 90 days, create a new assignment
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const createdAt = new Date(row.created_at);
+    if (createdAt <= ninetyDaysAgo) {
+      const due = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      await pool.query(
+        `INSERT INTO assignments (user_id, due_date, assessment_type, status)
+         VALUES ($1, $2, 'personal', 'pending')`,
+        [userId, due]
+      );
+    }
+  } catch (e) {
+    console.warn('ensureQuarterlyPersonalAssignment failed:', e.message);
+  }
+}
+
 
 
 // --- AUTHENTICATION ENDPOINT ---
@@ -86,7 +129,13 @@ app.post('/api/auth/login', async (req, res) => {
     const user = result.rows[0];
     const isMatch = (password === 'password') || await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    // Auto-ensure quarterly personal assessment for employees
+    if (user.role === 'employee') {
+      await ensureQuarterlyPersonalAssignment(user.id);
+    }
+
     res.json({ success: true, token, user: { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department } });
   } catch (err) { console.error('Login Error:', err); res.status(500).json({ error: 'Server error' }); }
 });
@@ -125,7 +174,31 @@ app.post('/api/assessments/start', authenticateToken, async (req, res) => {
         return res.status(403).json({ error: "This assignment is not valid or has already been started." });
     }
 
-    const firstQuestionResult = await pool.query("SELECT id, text, options FROM questions WHERE is_active = TRUE ORDER BY RANDOM() LIMIT 1");
+    const assignmentRow = await pool.query(
+      "SELECT assessment_type FROM assignments WHERE assignment_id = $1 AND user_id = $2 AND status = 'pending'",
+      [assignmentId, userId]
+    );
+    if (assignmentRow.rows.length === 0) {
+      return res.status(403).json({ error: "This assignment is not valid or has already been started." });
+    }
+    const track = assignmentRow.rows[0].assessment_type; // 'personal' | 'standard' | 'corporate'
+    
+    if (assignmentCheck.rows.length === 0) {
+      return res.status(403).json({ error: "This assignment is not valid or has already been started." });
+    }
+    
+    const assignmentType = assignmentCheck.rows[0].assessment_type; // 'personal' | 'standard' | 'corporate'
+    
+
+    const firstQuestionResult = await pool.query(`
+      SELECT id, text, options 
+      FROM questions 
+      WHERE is_active = TRUE
+        AND ($1 <> 'personal' OR (tags->>'track') = 'personal')
+        AND ($1 <> 'corporate' OR (tags->>'track') = 'corporate')
+      ORDER BY RANDOM() LIMIT 1
+    `, [assignmentType]);
+    
     if (firstQuestionResult.rows.length === 0) {
         return res.status(404).json({ error: 'No active questions found.' });
     }
@@ -155,10 +228,18 @@ app.post('/api/assessments/:sessionId/answer', authenticateToken, async (req, re
   }
   
   try {
-    const sessionCheck = await pool.query("SELECT * FROM assessments WHERE session_id = $1 AND user_id = $2 AND status = 'in_progress'", [sessionId, userId]);
+    const sessionCheck = await pool.query(
+      `SELECT a.*, asg.assessment_type
+       FROM assessments a
+       JOIN assignments asg ON a.assignment_id = asg.assignment_id
+       WHERE a.session_id = $1 AND a.user_id = $2 AND a.status = 'in_progress'`,
+      [sessionId, userId]
+    );
+    
     if (sessionCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Active session for this user not found.' });
     }
+    const assignmentType = sessionCheck.rows[0].assessment_type;
 
     await pool.query('INSERT INTO answers (session_id, question_id, answer_text) VALUES ($1, $2, $3)', [sessionId, questionId, answer_text || answer]);
 
@@ -167,10 +248,17 @@ app.post('/api/assessments/:sessionId/answer', authenticateToken, async (req, re
     const answeredQuestionIds = answeredQuestionsResult.rows.map(r => r.question_id);
 
     // Find the next available unanswered question
-    const nextQuestionResult = await pool.query(
-        'SELECT id, text, options FROM questions WHERE is_active = TRUE AND id <> ALL($1) ORDER BY RANDOM() LIMIT 1',
-        [answeredQuestionIds]
-    );
+    const nextQuestionResult = await pool.query(`
+      SELECT id, text, options
+      FROM questions
+      WHERE is_active = TRUE 
+        AND id <> ALL($1)
+        AND ($2 <> 'personal' OR (tags->>'track') = 'personal')
+        AND ($2 <> 'corporate' OR (tags->>'track') = 'corporate')
+      ORDER BY RANDOM() LIMIT 1
+    `, [answeredQuestionIds, assignmentType]);
+    
+    
 
     let nextQuestion = nextQuestionResult.rows[0];
 
@@ -279,10 +367,47 @@ app.get('/api/admin/dashboard', authenticateToken, async (req, res) => {
 app.get('/api/employee/dashboard', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   try {
+    await ensureQuarterlyPersonalAssignment(userId);
     const assessments = await pool.query(`SELECT a.session_id, a.status, r.overall_score, r.created_at as completed_date FROM assessments a LEFT JOIN reports r ON a.session_id = r.session_id WHERE a.user_id = $1 ORDER BY a.created_at DESC`, [userId]);
     const assignments = await pool.query(`SELECT assignment_id, due_date, status, assessment_type FROM assignments WHERE user_id = $1 ORDER BY due_date ASC`, [userId]);
-    res.json({ assessments: assessments.rows, assignments: assignments.rows });
+    const avgRes = await pool.query(`
+      SELECT ROUND(AVG(r.overall_score))::int AS avg
+      FROM reports r
+      JOIN assessments a ON a.session_id = r.session_id
+      WHERE a.user_id = $1
+    `, [userId]);
+    const overallAvg = avgRes.rows[0]?.avg || 0;
+    res.json({ assessments: assessments.rows, assignments: assignments.rows, overall_average: overallAvg });
   } catch (err) { console.error('Error fetching employee dashboard:', err); res.status(500).json({ error: 'Failed to load dashboard data' }); }
+});
+
+// --- SELF ASSIGN PERSONAL ASSESSMENT (EMPLOYEE) ---
+app.post('/api/assign/self', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // If employee already has a pending or in_progress personal assignment, return it
+    const existing = await pool.query(
+      `SELECT assignment_id, status FROM assignments
+       WHERE user_id = $1 AND assessment_type = 'personal' AND status IN ('pending','in_progress')
+       ORDER BY created_at DESC LIMIT 1`,
+      [userId]
+    );
+    if (existing.rows.length) {
+      return res.json({ success: true, assignment_id: existing.rows[0].assignment_id, status: existing.rows[0].status });
+    }
+
+    // Otherwise create a new pending personal assignment due in 14 days
+    const due = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const inserted = await pool.query(
+      `INSERT INTO assignments (user_id, due_date, assessment_type, status)
+       VALUES ($1, $2, 'personal', 'pending') RETURNING assignment_id`,
+      [userId, due]
+    );
+    return res.json({ success: true, assignment_id: inserted.rows[0].assignment_id, status: 'pending' });
+  } catch (err) {
+    console.error('Self-assign error:', err);
+    res.status(500).json({ error: 'Failed to self-assign assessment' });
+  }
 });
 
 

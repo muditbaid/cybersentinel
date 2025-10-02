@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CyberShield Sentinel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb',
+            'primary-dark': '#1d4ed8',
+            secondary: '#8b5cf6',
+            accent: '#ec4899',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { --vh: 1vh; }
+    @media (hover: none) and (pointer: coarse) {
+      :root { --vh: 1vh; }
+    }
+    body { min-height: 100vh; font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); }
+    .screen { display: none; opacity: 0; transition: opacity 0.4s ease; }
+    .screen.active { display: flex; opacity: 1; }
+    .card { background: white; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.7); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.25rem; border-radius: 0.75rem; font-weight: 600; transition: all 0.2s; cursor: pointer; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+    .btn-outline { background: transparent; border: 2px solid #2563eb; color: #2563eb; }
+    .btn-outline:hover { background: #f0f7ff; }
+    .progress-bar { height: 0.5rem; background: #e2e8f0; border-radius: 9999px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #8b5cf6); border-radius: 9999px; transition: width 0.5s ease; }
+    /* Conversation layout: keep page static height, scroll only inside chat */
+    #conversation-card { display: flex; flex-direction: column; height: calc(100vh - 160px); }
+    @media (max-width: 640px) { #conversation-card { height: calc(100vh - 180px); } }
+    .conversation-container { flex: 1 1 auto; overflow-y: auto; padding: 1rem; background: #f8fafc; border-radius: 1rem; margin-bottom: 1.0rem; max-height: unset; }
+    .message { margin-bottom: 1rem; display: flex; }
+    .message-bot { justify-content: flex-start; }
+    .message-user { justify-content: flex-end; }
+    .message-content { padding: 0.75rem 1rem; border-radius: 1.25rem; max-width: 80%; word-break: break-word; }
+    .message-bot .message-content { background: white; border: 1px solid #e2e8f0; }
+    .message-user .message-content { background: #2563eb; color: white; }
+    .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+    .status-completed { background-color: #dcfce7; color: #166534; }
+    .status-pending { background-color: #ffedd5; color: #9a3412; }
+    .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+    .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col" style="height: calc(var(--vh, 1vh) * 100);">
+  <!-- Navbar -->
+  <nav id="navbar" class="bg-white/90 backdrop-blur shadow-sm py-3 px-4 md:px-6 flex justify-between items-center hidden sticky top-0 z-30">
+    <div class="flex items-center">
+      <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3">
+        <i class="fas fa-shield-alt text-white"></i>
+      </div>
+      <h1 class="text-lg md:text-xl font-bold text-blue-600">CyberShield</h1>
+    </div>
+    <div class="hidden md:flex items-center gap-1" id="nav-links">
+      <button id="nav-home" class="flex flex-col items-center p-2 rounded-lg hover:bg-blue-50">
+        <i class="fas fa-home nav-icon"></i>
+        <span class="text-xs mt-1">Home</span>
+      </button>
+      <button id="nav-assessments" class="flex flex-col items-center p-2 rounded-lg hover:bg-blue-50">
+        <i class="fas fa-comments nav-icon"></i>
+        <span class="text-xs mt-1">Assess</span>
+      </button>
+      <button id="nav-reports" class="flex flex-col items-center p-2 rounded-lg hover:bg-blue-50">
+        <i class="fas fa-file-alt nav-icon"></i>
+        <span class="text-xs mt-1">Reports</span>
+      </button>
+      <button id="nav-admin" class="flex flex-col items-center p-2 rounded-lg hover:bg-purple-50 hidden">
+        <i class="fas fa-user-cog nav-icon"></i>
+        <span class="text-xs mt-1">Admin</span>
+      </button>
+    </div>
+    <div class="flex items-center space-x-3">
+      <span id="nav-user-name" class="text-gray-700 font-medium hidden md:inline"></span>
+      <button id="logout-btn" class="text-gray-600 hover:text-blue-600">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+  </nav>
+
+  <main class="flex-1 flex items-center justify-center p-4 py-6">
+    <!-- Employee Dashboard -->
+    <section id="employee-dashboard" class="screen w-full max-w-6xl mx-auto flex-col justify-center">
+      <!-- Value Proposition & Features (moved to top) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full mb-6">
+        <div class="lg:col-span-2 card p-6">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">CyberShield: Secure Your Small, Agile Team</h2>
+          <p class="text-gray-700 mb-4">In a small team, every person is a target. Identify risky behaviors and deliver targeted micro‑training so one phishing click doesn’t compromise your entire company.</p>
+          <div class="mb-4">
+            <button id="cta-take-now" class="btn btn-primary"><i class="fas fa-play mr-2"></i>Take New Assessment Now</button>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl bg-blue-50 border border-blue-100">
+              <div class="font-semibold mb-1">Continuous User Risk Scoring</div>
+              <p class="text-sm text-gray-700">Live posture updates driven by answers and behavioral patterns.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+              <div class="font-semibold mb-1">Automated Phishing Simulations</div>
+              <p class="text-sm text-gray-700">Periodic tests with just‑in‑time coaching for risky clicks.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div class="font-semibold mb-1">Personalized Micro‑Training</div>
+              <p class="text-sm text-gray-700">Short, context‑aware lessons targeting individual gaps.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-amber-50 border border-amber-100">
+              <div class="font-semibold mb-1">Measurable Risk Reduction</div>
+              <p class="text-sm text-gray-700">Track improvement over time with clear, auditable reports.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-2">Who It’s For</h3>
+          <ul class="list-disc list-inside text-gray-700 space-y-1">
+            <li>Law firms protecting client privilege</li>
+            <li>Fintechs preventing fraud</li>
+            <li>Healthtech safeguarding PHI</li>
+            <li>Any team handling sensitive data</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        <!-- Assignments Column -->
+        <div class="lg:col-span-2">
+          <div class="card p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-bold text-gray-800">Your Assignments</h2>
+              <span id="assignment-empty-badge" class="text-sm text-gray-500 hidden">No pending assignments</span>
+            </div>
+            <div id="assignments-list" class="space-y-3"></div>
+          </div>
+
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-bold text-gray-800">Assessment History</h2>
+              <button id="history-take-now" class="btn btn-outline"><i class="fas fa-plus mr-2"></i>New Assessment</button>
+            </div>
+            <div id="assessments-history" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- Sidebar Stats -->
+        <div class="lg:col-span-1">
+          <div class="card p-6">
+            <h3 class="font-semibold text-gray-800 mb-3">Quick Actions</h3>
+            <div id="overall-average" class="mb-4 text-center">
+              <div class="text-4xl font-bold text-blue-700" id="overall-average-score">--%</div>
+              <div class="text-sm text-gray-600">Overall Cyber Posture</div>
+            </div>
+            <div class="space-y-2">
+              <button id="quick-start-btn" class="btn btn-primary w-full">Start/Resume Assessment</button>
+              <button id="quick-new-btn" class="btn btn-outline w-full"><i class="fas fa-bolt mr-2"></i>Take New Assessment Now</button>
+              <button id="quick-reports-btn" class="btn btn-outline w-full">View Latest Report</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Hero -->
+    <section id="pre-hero" class="screen active w-full max-w-2xl mx-auto flex-col justify-center">
+      <div class="card p-8 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
+          <i class="fa fa-shield-alt text-blue-600 text-2xl"></i>
+        </div>
+        <h1 class="text-3xl font-extrabold mb-2">Cyber Shield™</h1>
+        <p class="text-gray-600 mb-6">Adaptive Security Assessment</p>
+        <button id="hero-start" class="btn btn-primary">Get Started</button>
+      </div>
+    </section>
+
+    <!-- Consent -->
+    <section id="pre-consent" class="screen w-full max-w-3xl mx-auto flex-col justify-center">
+      <div class="card p-8">
+        <h2 class="text-2xl font-bold mb-4">Before We Begin</h2>
+        <ul class="space-y-3 text-gray-700 mb-6">
+          <li><b>Behavior-focused.</b> No sensitive PII required.</li>
+          <li><b>Privacy-first.</b> GDPR/CCPA compliant. Data is anonymized.</li>
+          <li><b>Educational.</b> Not a formal security audit.</li>
+        </ul>
+        <label class="flex items-start gap-3 mb-6">
+          <input id="consent-check" type="checkbox" class="mt-1">
+          <span>I agree to the terms.</span>
+        </label>
+        <div class="flex justify-between">
+          <button class="btn btn-outline" id="consent-back">Back</button>
+          <button class="btn btn-primary" id="consent-next" disabled>Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Track Selection -->
+    <section id="pre-track" class="screen w-full max-w-4xl mx-auto flex-col justify-center">
+      <div class="card p-8">
+        <h2 class="text-3xl font-bold text-center mb-2">Choose Your Track</h2>
+        <p class="text-gray-600 text-center mb-8">Personalize your 10-minute assessment</p>
+        <div class="grid md:grid-cols-2 gap-6">
+          <button id="track-personal" class="p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-400 bg-blue-50 text-left transition">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-user text-blue-600"></i>
+              </div>
+              <b class="text-lg">Personal Track</b>
+            </div>
+            <p class="text-gray-600">Home devices, cloud storage, personal habits.</p>
+          </button>
+          <button id="track-corporate" class="p-6 rounded-2xl border-2 border-purple-200 hover:border-purple-400 bg-purple-50 text-left transition">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <i class="fas fa-building text-purple-600"></i>
+              </div>
+              <b class="text-lg">Corporate Track</b>
+            </div>
+            <p class="text-gray-600">Workplace tools, policies, corporate data.</p>
+          </button>
+        </div>
+        <div class="flex justify-end mt-6">
+          <button class="btn btn-outline" id="track-back">Back</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Login -->
+    <div id="login-screen" class="screen w-full max-w-md mx-auto flex-col justify-center">
+      <div class="card p-8">
+        <div class="text-center mb-6">
+          <h2 class="text-2xl font-bold">Sign In</h2>
+          <p class="text-gray-600">Use your credentials to continue</p>
+        </div>
+        <div id="login-error" class="bg-red-100 text-red-700 px-4 py-3 rounded mb-4 hidden"></div>
+        <div class="mb-4"><input type="email" id="login-email" class="w-full p-3 border rounded-lg" placeholder="Email" required></div>
+        <div class="mb-4"><input type="password" id="login-password" class="w-full p-3 border rounded-lg" placeholder="Password" required></div>
+        <button id="login-btn" class="btn btn-primary w-full">Sign In</button>
+      </div>
+    </div>
+
+    <!-- Assessment Chat -->
+    <div id="conversation-screen" class="screen w-full max-w-6xl mx-auto">
+      <div id="conversation-card" class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-gray-800">Security Assessment</h2>
+          <div class="w-32 text-right">
+            <div class="text-xs text-gray-600"><span id="progress-percent">0%</span> Complete</div>
+            <div class="progress-bar mt-1"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div id="conversation-container" class="conversation-container mb-6"></div>
+        <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 flex-none"></div>
+        <div class="flex justify-between">
+          <button id="btn-exit" class="btn btn-outline text-red-600 border-red-200 hover:bg-red-50">Exit</button>
+          <button id="btn-skip" class="btn btn-outline">Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report -->
+    <div id="report-screen" class="screen w-full max-w-6xl mx-auto">
+      <div class="card p-8">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-gray-800 mb-2">Assessment Report</h1>
+          <p class="text-gray-600">Generated on <span id="report-date"></span></p>
+        </div>
+
+        <!-- Score Summary & Posture -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div class="bg-blue-50 rounded-2xl p-6 text-center">
+            <p id="report-score" class="text-5xl font-bold text-blue-700">--%</p>
+            <p id="report-risk-level" class="mt-2 text-lg font-semibold"></p>
+            <div id="report-overall-badge" class="inline-flex items-center justify-center mt-3 px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-800"></div>
+          </div>
+          <div class="md:col-span-2 bg-gray-50 rounded-2xl p-6">
+            <h3 class="font-semibold text-lg mb-4">Category Scores</h3>
+            <div id="report-category-scores" class="space-y-4"></div>
+            <div class="mt-4 text-sm text-gray-600" id="report-exec-summary"></div>
+          </div>
+        </div>
+
+        <!-- Attacker's Playbook -->
+        <div class="mb-10">
+          <div class="border-l-4 border-red-500 bg-red-50 rounded-r-xl p-4 mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">The Attacker's Playbook</h2>
+            <p class="text-gray-600">How a threat actor might approach based on your patterns</p>
+          </div>
+          <div id="report-attack-playbook" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- Blindspots & Priorities -->
+        <div class="mb-10">
+          <div class="border-l-4 border-yellow-500 bg-yellow-50 rounded-r-xl p-4 mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Blindspots & Priorities</h2>
+            <p class="text-gray-600">What needs attention first</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="report-priorities"></div>
+        </div>
+
+        <!-- Security Mindset -->
+        <div class="mb-10">
+          <div class="border-l-4 border-purple-500 bg-purple-50 rounded-r-xl p-4 mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Your Security Mindset</h2>
+            <p class="text-gray-600">Habits and decision patterns that emerged</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 bg-green-50 rounded-xl">
+              <h4 class="font-semibold text-green-700 mb-2">Strengths</h4>
+              <ul id="report-strengths" class="list-disc list-inside text-green-800"></ul>
+            </div>
+            <div class="p-4 bg-orange-50 rounded-xl">
+              <h4 class="font-semibold text-orange-700 mb-2">Areas to Improve</h4>
+              <ul id="report-improvements" class="list-disc list-inside text-orange-800"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 30-Day Security Upgrade -->
+        <div class="mb-10">
+          <div class="border-l-4 border-green-500 bg-green-50 rounded-r-xl p-4 mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Your 30-Day Security Upgrade</h2>
+            <p class="text-gray-600">Simple, high-impact steps</p>
+          </div>
+          <div id="report-upgrade-plan" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- AI Coach CTA -->
+        <div class="mb-10">
+          <div class="rounded-2xl p-6 border-2" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); border-color:#fbcfe8;">
+            <div class="text-center">
+              <div class="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-robot text-pink-600 text-2xl"></i>
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 mb-2">Meet Aura, Your AI Security Coach</h3>
+              <p class="text-gray-600 mb-4">Get personalized, step-by-step help to implement your plan.</p>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button class="btn" style="background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%); color:white;"><i class="fas fa-robot mr-2"></i> Start Free Coaching</button>
+                <button class="btn btn-outline"><i class="fas fa-info-circle mr-2"></i> Learn More</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rating Legend -->
+        <div class="mb-10">
+          <h3 class="font-semibold text-lg mb-4 text-center">Understanding Your Ratings</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="rounded-lg p-3 text-center bg-green-100 border-2 border-green-200"><div class="font-semibold">Excellent</div><div class="text-sm text-green-900">Strong, comprehensive protection</div></div>
+            <div class="rounded-lg p-3 text-center bg-blue-100 border-2 border-blue-200"><div class="font-semibold">Good</div><div class="text-sm text-blue-900">Solid protection, minor gaps</div></div>
+            <div class="rounded-lg p-3 text-center bg-yellow-100 border-2 border-yellow-200"><div class="font-semibold">Fair</div><div class="text-sm text-yellow-900">Some important areas need work</div></div>
+            <div class="rounded-lg p-3 text-center bg-red-100 border-2 border-red-200"><div class="font-semibold">Needs Attention</div><div class="text-sm text-red-900">Address critical issues urgently</div></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-3 justify-center">
+          <button id="download-report" class="btn btn-outline"><i class="fas fa-download mr-2"></i> Download PDF</button>
+          <button id="email-report" class="btn btn-outline"><i class="fas fa-envelope mr-2"></i> Email Report</button>
+          <button id="back-to-dashboard-btn" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Dashboard</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Exit Modal -->
+  <div id="exit-modal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-40">
+    <div class="bg-white rounded-xl shadow-xl p-6 w-[92vw] max-w-md">
+      <h3 class="text-lg font-semibold mb-2">Exit assessment?</h3>
+      <p class="text-gray-600 mb-4">Your progress is saved. Resume anytime.</p>
+      <div class="flex justify-end gap-2">
+        <button id="exit-cancel" class="btn btn-outline">Cancel</button>
+        <button id="exit-confirm" class="btn bg-red-600 text-white">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = { currentScreen: 'pre-hero', user: null, token: null, currentSessionId: null, totalQuestions: 10 };
+    const API_BASE_URL = 'http://localhost:5000/api';
+
+    // --- UI Elements ---
+    const ui = {
+      screens: document.querySelectorAll('.screen'),
+      navbar: document.getElementById('navbar'),
+      navUserName: document.getElementById('nav-user-name'),
+      dashboard: {
+        assignmentsList: document.getElementById('assignments-list'),
+        assessmentsHistory: document.getElementById('assessments-history'),
+        emptyBadge: document.getElementById('assignment-empty-badge'),
+        quickStart: document.getElementById('quick-start-btn'),
+        quickNew: document.getElementById('quick-new-btn'),
+        quickReports: document.getElementById('quick-reports-btn'),
+        overallAvgScore: document.getElementById('overall-average-score')
+      },
+      login: {
+        email: document.getElementById('login-email'),
+        password: document.getElementById('login-password'),
+        btn: document.getElementById('login-btn'),
+        error: document.getElementById('login-error')
+      },
+      assessment: {
+        container: document.getElementById('conversation-container'),
+        options: document.getElementById('options-container'),
+        progressPercent: document.getElementById('progress-percent'),
+        progressFill: document.getElementById('progress-fill')
+      },
+      report: {
+        date: document.getElementById('report-date'),
+        score: document.getElementById('report-score'),
+        risk: document.getElementById('report-risk-level'),
+        categories: document.getElementById('report-category-scores'),
+        recs: document.getElementById('report-recommendations'),
+        strengths: document.getElementById('report-strengths')
+      }
+    };
+
+    // --- Utilities ---
+    let suppressNavPush = false;
+    function showScreen(id) {
+      ui.screens.forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      state.currentScreen = id;
+
+      const hideNav = ['pre-hero', 'pre-consent', 'pre-track', 'login-screen'].includes(id);
+      ui.navbar.classList.toggle('hidden', hideNav);
+      document.getElementById('nav-admin').classList.toggle('hidden', state.user?.role !== 'admin');
+      if (state.user) ui.navUserName.textContent = state.user.name || state.user.email;
+
+      // Push SPA state so browser Back stays inside app
+      if (!suppressNavPush && state.token) {
+        history.pushState({ screen: id }, id, '#' + id);
+      }
+    }
+
+    async function apiCall(endpoint, method = 'GET', body = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, { method, headers, body: body ? JSON.stringify(body) : null });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    // --- Flow Handlers ---
+    document.getElementById('hero-start').addEventListener('click', () => showScreen('pre-consent'));
+    document.getElementById('consent-check').addEventListener('change', e => document.getElementById('consent-next').disabled = !e.target.checked);
+    document.getElementById('consent-back').addEventListener('click', () => showScreen('pre-hero'));
+    document.getElementById('consent-next').addEventListener('click', () => showScreen('pre-track'));
+    document.getElementById('track-back').addEventListener('click', () => showScreen('pre-consent'));
+
+    let selectedTrack = null;
+    document.getElementById('track-personal').addEventListener('click', () => { selectedTrack = 'personal'; showScreen('login-screen'); });
+    document.getElementById('track-corporate').addEventListener('click', () => { selectedTrack = 'corporate'; showScreen('login-screen'); });
+
+    async function handleLogin() {
+      const email = ui.login.email.value.trim();
+      const password = ui.login.password.value;
+      if (!email || !password) return;
+      try {
+        ui.login.error.classList.add('hidden');
+        const data = await apiCall('/auth/login', 'POST', { email, password });
+        state.token = data.token;
+        state.user = data.user;
+
+        // Auto-assign personal assessment if needed
+        if (selectedTrack === 'personal') {
+          try {
+            await apiCall('/employee/dashboard'); // Ensure user exists
+            // Backend should auto-create assignment on first login (handled in DB trigger or login logic)
+          } catch (e) { console.warn('Dashboard fetch failed on login:', e); }
+        }
+
+        // persist session and last screen
+        localStorage.setItem('cs_token', state.token);
+        localStorage.setItem('cs_user', JSON.stringify(state.user));
+        await loadEmployeeDashboard();
+        history.replaceState({ screen: 'employee-dashboard' }, 'dashboard');
+        showScreen('employee-dashboard');
+      } catch (err) {
+        ui.login.error.textContent = err.message;
+        ui.login.error.classList.remove('hidden');
+      }
+    }
+    ui.login.btn.addEventListener('click', handleLogin);
+
+    // --- Dashboard ---
+    let lastDashboardData = null;
+    async function loadEmployeeDashboard() {
+      const data = await apiCall('/employee/dashboard');
+      lastDashboardData = data;
+      renderDashboard(data);
+    }
+
+    function renderDashboard(data) {
+      const { assignments = [], assessments = [], overall_average } = data;
+      if (typeof overall_average === 'number') {
+        ui.dashboard.overallAvgScore.textContent = `${overall_average}%`;
+      }
+
+      // Assignments
+      const inProgress = assignments.find(a => a.status === 'in_progress');
+      const pending = assignments.find(a => a.status === 'pending');
+      const upcoming = [inProgress, pending].filter(Boolean);
+
+      ui.dashboard.emptyBadge.classList.toggle('hidden', upcoming.length !== 0);
+      ui.dashboard.assignmentsList.innerHTML = upcoming.length ? upcoming.map(a => `
+        <div class="p-4 border rounded-xl flex items-center justify-between bg-gray-50">
+          <div>
+            <div class="font-semibold capitalize">${a.assessment_type || 'standard'} assessment</div>
+            <div class="text-sm text-gray-600">Due: ${a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</div>
+            <span class="status-badge status-${a.status}">${a.status.replace('_',' ')}</span>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-primary start-btn" data-assignment-id="${a.assignment_id}">${a.status === 'in_progress' ? 'Resume' : 'Start'}</button>
+          </div>
+        </div>
+      `).join('') : '<div class="text-gray-500">No pending items.</div>';
+
+      // History
+      ui.dashboard.assessmentsHistory.innerHTML = assessments.length ? assessments.map(s => `
+        <div class="p-4 border rounded-xl flex items-center justify-between">
+          <div>
+            <div class="font-medium">Session ${s.session_id.slice(0,8)}…</div>
+            <div class="text-sm text-gray-600">Status: <span class="status-badge status-${s.status}">${s.status.replace('_',' ')}</span></div>
+            ${s.completed_date ? `<div class="text-sm text-gray-500">Completed: ${new Date(s.completed_date).toLocaleDateString()}</div>` : ''}
+          </div>
+          <div class="flex gap-2">
+            ${s.overall_score != null ? `<button class="btn btn-outline view-report-btn" data-session-id="${s.session_id}">View Report</button>` : ''}
+          </div>
+        </div>
+      `).join('') : '<div class="text-gray-500">No assessments yet.</div>';
+
+      // Quick actions
+      ui.dashboard.quickStart.onclick = () => {
+        const target = inProgress || pending;
+        if (target) startAssessment(target.assignment_id);
+        else alert('No assignment available.');
+      };
+      const triggerNewAssessment = async () => {
+        // Prefer pending/in-progress; else create a personal assignment on demand via dashboard fetch
+        if (pending) return startAssessment(pending.assignment_id);
+        if (inProgress) return startAssessment(inProgress.assignment_id);
+        // If no assignment exists, self-assign a personal assessment and start it
+        try {
+          const resp = await apiCall('/assign/self', 'POST');
+          if (resp?.assignment_id) {
+            return startAssessment(resp.assignment_id);
+          }
+          // Fallback: refresh dashboard then try again
+          await loadEmployeeDashboard();
+          const again = lastDashboardData.assignments?.find(a => a.status === 'pending') || lastDashboardData.assignments?.find(a => a.status === 'in_progress');
+          if (again) return startAssessment(again.assignment_id);
+          alert('Could not create a new assessment right now.');
+        } catch (_) {
+          alert('Could not create a new assessment right now.');
+        }
+      };
+      const ctaTakeNow = document.getElementById('cta-take-now');
+      const historyTakeNow = document.getElementById('history-take-now');
+      if (ctaTakeNow) ctaTakeNow.onclick = triggerNewAssessment;
+      if (historyTakeNow) historyTakeNow.onclick = triggerNewAssessment;
+      if (ui.dashboard.quickNew) ui.dashboard.quickNew.onclick = triggerNewAssessment;
+      ui.dashboard.quickReports.onclick = () => {
+        const latestWithReport = assessments.find(a => a.overall_score != null);
+        if (latestWithReport) loadReport(latestWithReport.session_id);
+        else alert('No report available yet.');
+      };
+
+      // Row button handlers
+      ui.dashboard.assignmentsList.querySelectorAll('.start-btn').forEach(btn => {
+        btn.addEventListener('click', () => startAssessment(btn.dataset.assignmentId));
+      });
+      ui.dashboard.assessmentsHistory.querySelectorAll('.view-report-btn').forEach(btn => {
+        btn.addEventListener('click', () => loadReport(btn.dataset.sessionId));
+      });
+    }
+
+    // --- Assessment Logic ---
+    let questionHistory = [];
+    async function startAssessment(assignmentId) {
+      try {
+        const data = await apiCall('/assessments/start', 'POST', { assignmentId });
+        state.currentSessionId = data.session_id;
+        questionHistory = [data.current_question];
+        renderConversation();
+        showScreen('conversation-screen');
+      } catch (err) {
+        alert('Could not start assessment: ' + err.message);
+      }
+    }
+
+    function renderConversation() {
+      const q = questionHistory[questionHistory.length - 1];
+      ui.assessment.container.innerHTML = questionHistory.map(q => `
+        <div class="message ${q.userAnswer ? 'message-user' : 'message-bot'}">
+          <div class="message-content">${q.userAnswer || q.text}</div>
+        </div>
+      `).join('');
+
+      ui.assessment.options.innerHTML = q.options.map(opt => `
+        <button class="btn btn-outline option-btn" data-answer="${opt}">${opt}</button>
+      `).join('');
+
+      const progress = Math.min(100, Math.round(((questionHistory.length - 1) / state.totalQuestions) * 100));
+      ui.assessment.progressPercent.textContent = `${progress}%`;
+      ui.assessment.progressFill.style.width = `${progress}%`;
+      // Always keep chat scrolled to bottom
+      ui.assessment.container.scrollTop = ui.assessment.container.scrollHeight;
+    }
+
+    ui.assessment.options.addEventListener('click', async (e) => {
+      if (!e.target.matches('.option-btn')) return;
+      const answer = e.target.dataset.answer;
+      const q = questionHistory[questionHistory.length - 1];
+      q.userAnswer = answer;
+
+      try {
+        const data = await apiCall(`/assessments/${state.currentSessionId}/answer`, 'POST', { questionId: q.id, answer_text: answer });
+        if (data.is_complete) {
+          await loadReport(state.currentSessionId);
+          // Refresh dashboard so the new report appears
+          try { await loadEmployeeDashboard(); } catch (e) { console.warn('Dashboard refresh failed:', e); }
+        } else {
+          questionHistory.push(data.next_question);
+          renderConversation();
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    // --- Report ---
+    async function loadReport(sessionId) {
+      try {
+        const data = await apiCall(`/assessments/${sessionId}/report`);
+        const r = data.report;
+
+        ui.report.date.textContent = new Date(r.created_at).toLocaleDateString();
+        ui.report.score.textContent = `${r.overall_score}%`;
+
+        // Risk level
+        const riskEl = ui.report.risk;
+        if (r.overall_score >= 85) { riskEl.textContent = 'Excellent Posture'; riskEl.className = 'text-green-600 font-semibold'; }
+        else if (r.overall_score >= 70) { riskEl.textContent = 'Good Posture'; riskEl.className = 'text-blue-600 font-semibold'; }
+        else if (r.overall_score >= 50) { riskEl.textContent = 'Fair Posture'; riskEl.className = 'text-yellow-600 font-semibold'; }
+        else { riskEl.textContent = 'Needs Attention'; riskEl.className = 'text-red-600 font-semibold'; }
+
+        // Overall badge + summary
+        const badge = document.getElementById('report-overall-badge');
+        const badgeMap = r.overall_score >= 85 ? ['Excellent Cyber Posture','bg-green-100 text-green-800 border-2 border-green-200']
+                        : r.overall_score >= 70 ? ['Good Cyber Posture','bg-blue-100 text-blue-800 border-2 border-blue-200']
+                        : r.overall_score >= 50 ? ['Fair Cyber Posture','bg-yellow-100 text-yellow-900 border-2 border-yellow-200']
+                        : ['Needs Urgent Attention','bg-red-100 text-red-900 border-2 border-red-200'];
+        badge.className = `inline-flex items-center justify-center mt-3 px-4 py-2 rounded-full text-sm font-semibold ${badgeMap[1]}`;
+        badge.textContent = badgeMap[0];
+        document.getElementById('report-exec-summary').textContent = r.executive_summary || '';
+
+        // Categories
+        ui.report.categories.innerHTML = Object.entries(r.category_scores).map(([cat, score]) => `
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="capitalize">${cat}</span>
+              <span>${score}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${score}%"></div></div>
+          </div>
+        `).join('');
+
+        // Attacker playbook from top risk tags
+        const tags = r.behavioral_patterns || {};
+        const top = Object.entries(tags).sort((a,b)=>b[1]-a[1]).slice(0,2);
+        const scenarios = {
+          phishingAwareness: {
+            title: 'Phishing & Social Engineering',
+            desc: 'Likely to target you with urgent emails or fake login pages.',
+            example: 'You receive an urgent “password reset” email. Clicking the link sends credentials to attackers.'
+          },
+          deviceSecurity: {
+            title: 'Device Hygiene & Updates',
+            desc: 'Outdated software and weak endpoint controls are attractive to attackers.',
+            example: 'On public Wi‑Fi, automated tools exploit an unpatched app to plant malware.'
+          },
+          identity: {
+            title: 'Identity & MFA',
+            desc: 'Weak authentication flows become the first foothold.',
+            example: 'SIM-swap + reused passwords let them bypass basic checks without MFA.'
+          },
+          remoteWork: {
+            title: 'Remote Work Exposure',
+            desc: 'Home networks and personal devices widen the attack surface.',
+            example: 'An exposed router admin panel gets brute-forced, granting LAN access.'
+          }
+        };
+        const playbook = document.getElementById('report-attack-playbook');
+        playbook.innerHTML = top.length ? top.map(([k,v]) => {
+          const s = scenarios[k] || { title: k, desc: 'Elevated risk pattern identified.', example: 'Review security hygiene for this area.' };
+          return `
+            <div class="p-4 rounded-xl border bg-white">
+              <h4 class="font-semibold mb-1">${s.title}</h4>
+              <p class="text-sm text-gray-700 mb-2">${s.desc}</p>
+              <div class="text-sm bg-red-50 border border-red-200 text-red-800 rounded p-3">Example: ${s.example}</div>
+            </div>
+          `;
+        }).join('') : '<div class="text-gray-500">No prominent attacker patterns detected.</div>';
+
+        // Blindspots & Priorities (group recs)
+        const prioMap = { critical: 'Fix This Week', important: 'Next Two Weeks', suggested: 'This Month' };
+        const recs = r.recommendations || [];
+        const grouped = { critical: [], important: [], suggested: [] };
+        for (const rec of recs) { (grouped[rec.priority] || grouped.suggested).push(rec.text); }
+        const priorities = document.getElementById('report-priorities');
+        priorities.innerHTML = ['critical','important','suggested'].map(p => `
+          <div class="p-4 rounded-xl ${p==='critical'?'bg-red-50 border-red-300':'bg-yellow-50 border-yellow-300'} border">
+            <h4 class="font-semibold mb-2">${prioMap[p]}</h4>
+            <ul class="list-disc list-inside text-sm text-gray-800">${(grouped[p].length? grouped[p]: ['No items']).map(t=>`<li>${t}</li>`).join('')}</ul>
+          </div>
+        `).join('');
+
+        // Strengths
+        ui.report.strengths.innerHTML = (r.strengths || []).map(s => `<li>${s}</li>`).join('') || '<li>No strengths identified.</li>';
+
+        // Improvements from tags
+        const improvements = Object.entries(tags).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,4)
+          .map(([k]) => ({ phishingAwareness:'Practice “pause and verify” for urgent messages.', deviceSecurity:'Keep OS/apps updated and enable auto‑lock & encryption.', identity:'Use a password manager and turn on MFA.', remoteWork:'Harden home router, disable WPS, and separate guest wifi.' }[k] || `Improve: ${k}`));
+        document.getElementById('report-improvements').innerHTML = improvements.length ? improvements.map(i=>`<li>${i}</li>`).join('') : '<li>No notable gaps detected.</li>';
+
+        // 30‑Day Upgrade Plan synthesized from recs
+        const week1 = grouped.critical.slice(0,3);
+        const week2 = grouped.important.slice(0,3);
+        const week4 = grouped.suggested.slice(0,3);
+        document.getElementById('report-upgrade-plan').innerHTML = `
+          <div class="p-4 bg-blue-50 rounded-xl"><h4 class="font-semibold text-blue-700 mb-2">Week 1: Essentials</h4><ul class="list-disc list-inside text-sm">${(week1.length?week1:['Enable MFA on email, VPN, finance','Install a password manager','Update OS and critical apps']).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+          <div class="p-4 bg-green-50 rounded-xl"><h4 class="font-semibold text-green-700 mb-2">Weeks 2-3: Build Habits</h4><ul class="list-disc list-inside text-sm">${(week2.length?week2:['Schedule phishing drill','Harden device auto-lock and encryption','Review SaaS access']).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+          <div class="p-4 bg-purple-50 rounded-xl"><h4 class="font-semibold text-purple-700 mb-2">Week 4: Maintain</h4><ul class="list-disc list-inside text-sm">${(week4.length?week4:['Weekly update check','Backup important data','Quarterly access review']).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        `;
+
+        showScreen('report-screen');
+      } catch (err) {
+        alert('Failed to load report: ' + err.message);
+      }
+    }
+
+    // --- Report Actions ---
+    document.getElementById('download-report').addEventListener('click', () => {
+      alert('PDF download would be implemented with a library like jsPDF.');
+    });
+    document.getElementById('email-report').addEventListener('click', () => {
+      alert('Email feature would integrate with backend email service.');
+    });
+    document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
+      // Return to dashboard and refresh
+      if (state.token) {
+        loadEmployeeDashboard().finally(() => showScreen('employee-dashboard'));
+      } else {
+        showScreen('pre-hero');
+      }
+    });
+
+    // --- Exit Modal ---
+    document.getElementById('btn-exit').addEventListener('click', () => document.getElementById('exit-modal').classList.remove('hidden'));
+    document.getElementById('exit-cancel').addEventListener('click', () => document.getElementById('exit-modal').classList.add('hidden'));
+    document.getElementById('exit-confirm').addEventListener('click', () => {
+      document.getElementById('exit-modal').classList.add('hidden');
+      showScreen('pre-hero');
+    });
+
+    // --- Nav ---
+    document.getElementById('nav-home').addEventListener('click', () => {
+      if (state.token) { loadEmployeeDashboard().finally(() => showScreen('employee-dashboard')); }
+      else { showScreen('pre-hero'); }
+    });
+    document.getElementById('nav-assessments').addEventListener('click', () => {
+      if (state.token) { loadEmployeeDashboard().finally(() => showScreen('employee-dashboard')); }
+      else { showScreen('pre-track'); }
+    });
+    document.getElementById('nav-reports').addEventListener('click', () => {
+      if (state.token && lastDashboardData) {
+        const latestWithReport = lastDashboardData.assessments?.find(a => a.overall_score != null);
+        if (latestWithReport) { loadReport(latestWithReport.session_id); return; }
+      }
+      alert('No report available yet. Complete an assessment first.');
+    });
+
+    // Initialize
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      state.token = null; state.user = null;
+      localStorage.removeItem('cs_token');
+      localStorage.removeItem('cs_user');
+      showScreen('pre-hero');
+      history.replaceState({ screen: 'pre-hero' }, 'home');
+    });
+
+    // --- Session restore & back navigation handling ---
+    window.addEventListener('popstate', (e) => {
+      const screen = e.state?.screen;
+      suppressNavPush = true;
+      if (screen && document.getElementById(screen)) {
+        showScreen(screen);
+      } else if (state.token) {
+        // Prevent exiting the app: bounce back to dashboard
+        history.replaceState({ screen: 'employee-dashboard' }, 'dashboard');
+        showScreen('employee-dashboard');
+      } else {
+        history.replaceState({ screen: 'pre-hero' }, 'home');
+        showScreen('pre-hero');
+      }
+      suppressNavPush = false;
+    });
+
+    (function restoreSession() {
+      const token = localStorage.getItem('cs_token');
+      const userStr = localStorage.getItem('cs_user');
+      if (token && userStr) {
+        try {
+          state.token = token;
+          state.user = JSON.parse(userStr);
+          loadEmployeeDashboard().finally(() => {
+            const last = (history.state && history.state.screen) || 'employee-dashboard';
+            history.replaceState({ screen: last }, last);
+            suppressNavPush = true; // first paint shouldn't create extra history
+            showScreen(last);
+            suppressNavPush = false;
+          });
+        } catch (_) { /* ignore */ }
+      }
+      // Guard: ensure there is at least one state so Back doesn’t exit domain
+      if (!history.state) {
+        history.replaceState({ screen: 'pre-hero' }, 'home');
+      }
+    })();
+  </script>
+</body>
+</html>

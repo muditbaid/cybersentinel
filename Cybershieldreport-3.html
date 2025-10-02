@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield - Security Assessment Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --critical: #dc2626;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+        }
+        
+        .screen {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .screen.active {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .section-header {
+            border-left: 4px solid;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+        }
+        
+        .cyber-posture {
+            border-left-color: #2563eb;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+        
+        .attacker-playbook {
+            border-left-color: #dc2626;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+        
+        .blindspots-priorities {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+        
+        .security-mindset {
+            border-left-color: #8b5cf6;
+            background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%);
+        }
+        
+        .security-upgrade {
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+        
+        .ai-coach {
+            border-left-color: #ec4899;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+        }
+        
+        .rating-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+        
+        .rating-excellent { background: #dcfce7; color: #166534; border: 2px solid #bbf7d0; }
+        .rating-good { background: #dbeafe; color: #1e40af; border: 2px solid #bfdbfe; }
+        .rating-fair { background: #fef3c7; color: #92400e; border: 2px solid #fde68a; }
+        .rating-poor { background: #fee2e2; color: #991b1b; border: 2px solid #fecaca; }
+        
+        .progress-bar {
+            height: 0.75rem;
+            border-radius: 1rem;
+            background: #e2e8f0;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 1rem;
+            transition: width 0.5s ease;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin: 1rem 0;
+        }
+        
+        .simple-explanation {
+            background: #f8fafc;
+            border-left: 4px solid #94a3b8;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+        
+        .scenario-box {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-ai {
+            background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%);
+            color: white;
+        }
+        
+        .btn-ai:hover {
+            background: linear-gradient(135deg, #db2777 0%, #c026d3 100%);
+            transform: translateY(-2px);
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .legend-item {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        
+        .ai-coach-card {
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+            border: 2px solid #fbcfe8;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mr-3">
+                <i class="fas fa-shield-alt text-white text-lg"></i>
+            </div>
+            <h1 class="text-xl font-bold text-blue-600">CyberShield</h1>
+        </div>
+        <div class="text-sm text-gray-600">Security Assessment Report</div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center p-4 py-8">
+        <div id="results-screen" class="screen active w-full max-w-6xl">
+            <div class="card p-8">
+                <!-- Report Header -->
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-shield-alt text-blue-600 text-3xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Your Cyber Security Assessment</h1>
+                    <p class="text-gray-600">Generated on <span id="report-date">October 15, 2024</span></p>
+                </div>
+
+                <!-- 1. YOUR CYBER POSTURE RATING 🛡️ -->
+                <div class="section-header cyber-posture">
+                    <h2 class="text-2xl font-bold text-gray-800">🛡️ Your Cyber Posture Rating</h2>
+                    <p class="text-gray-600">How protected you are against online threats</p>
+                </div>
+
+                <div class="text-center mb-6">
+                    <div class="rating-badge rating-fair" id="overall-rating">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        Fair Cyber Posture
+                    </div>
+                    <p class="text-gray-600 mt-2 text-lg">You have basic protection but several areas need improvement</p>
+                </div>
+
+                <div class="simple-explanation">
+                    <h4 class="font-semibold mb-2">What Your Rating Means:</h4>
+                    <p class="text-gray-700">Think of your cyber posture like your home's security. You have some locks on the doors, but a few windows might be open. You're safer than many, but there are specific areas where you could be much more protected.</p>
+                </div>
+
+                <div class="metric-card">
+                    <h3 class="font-semibold text-lg mb-4">Key Security Areas</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold">Password Security</span>
+                                <span class="rating-badge rating-poor" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Needs Urgent Attention</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">How well you protect your accounts from unauthorized access</p>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-red-500" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold">Software Updates</span>
+                                <span class="rating-badge rating-fair" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Should Improve</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Keeping your devices protected with latest security fixes</p>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-orange-500" style="width: 55%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold">Scam Detection</span>
+                                <span class="rating-badge rating-good" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Well Done</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Your ability to spot fake emails and suspicious messages</p>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-green-500" style="width: 82%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. THE ATTACKER'S PLAYBOOK 👁️ -->
+                <div class="section-header attacker-playbook">
+                    <h2 class="text-2xl font-bold text-gray-800">👁️ The Attacker's Playbook</h2>
+                    <p class="text-gray-600">How hackers might see you and what they would try</p>
+                </div>
+
+                <div class="simple-explanation">
+                    <h4 class="font-semibold mb-2">In simple terms:</h4>
+                    <p class="text-gray-700">Hackers look for easy targets. Based on your habits, here's what makes you attractive to them and how they might try to break into your accounts.</p>
+                </div>
+
+                <div class="metric-card">
+                    <h3 class="font-semibold text-lg mb-3 text-red-700">🎯 Your Main Vulnerabilities</h3>
+                    
+                    <!-- Vulnerability 1: Password Reuse -->
+                    <div class="scenario-box">
+                        <h4 class="font-semibold mb-2">🔑 Password Reuse Across Multiple Sites</h4>
+                        <p class="text-sm text-gray-700 mb-3"><strong>How hackers see this:</strong> "This person uses the same password everywhere. If I get one password, I can access all their accounts."</p>
+                        
+                        <div class="bg-red-50 p-3 rounded-lg">
+                            <h5 class="font-semibold text-red-800 mb-1">📖 Example Attack Scenario:</h5>
+                            <p class="text-sm text-red-700">A shopping website you used gets hacked. Hackers take the email and password you used there and try the same combination on your email, bank, and social media accounts. Since you reuse passwords, they can now access multiple services.</p>
+                        </div>
+                    </div>
+
+                    <!-- Vulnerability 2: Outdated Software -->
+                    <div class="scenario-box">
+                        <h4 class="font-semibold mb-2">💻 Delayed Software Updates</h4>
+                        <p class="text-sm text-gray-700 mb-3"><strong>How hackers see this:</strong> "This computer has known security holes that haven't been fixed. I can use ready-made tools to break in."</p>
+                        
+                        <div class="bg-red-50 p-3 rounded-lg">
+                            <h5 class="font-semibold text-red-800 mb-1">📖 Example Attack Scenario:</h5>
+                            <p class="text-sm text-red-700">You're using an older version of software that has a known security flaw. Hackers have automated tools that scan for computers with this specific vulnerability. When you connect to public Wi-Fi, their tool detects your vulnerable software and automatically installs malware.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. BLINDSPOTS & PRIORITIES 🔥 -->
+                <div class="section-header blindspots-priorities">
+                    <h2 class="text-2xl font-bold text-gray-800">🔥 Blindspots & Priorities</h2>
+                    <p class="text-gray-600">What needs your attention right now</p>
+                </div>
+
+                <div class="simple-explanation">
+                    <h4 class="font-semibold mb-2">Your security blindspots:</h4>
+                    <p class="text-gray-700">These are areas where you might not realize you're vulnerable. Addressing these will give you the biggest security improvement.</p>
+                </div>
+
+                <div class="metric-card">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                            <h4 class="font-semibold text-red-700 mb-3">🚨 Fix This Week</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-key text-red-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Stop reusing passwords</strong> - Use different passwords for each account</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-shield-alt text-red-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Turn on two-factor authentication</strong> for your email</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+                            <h4 class="font-semibold text-orange-700 mb-3">⚠️ Next 2 Weeks</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-sync-alt text-orange-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Update all your software</strong> - computer, phone, and apps</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-wifi text-orange-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Get a VPN</strong> for public Wi-Fi protection</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+                            <h4 class="font-semibold text-yellow-700 mb-3">📋 This Month</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-user-secret text-yellow-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Review social media privacy</strong> settings</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-hdd text-yellow-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Set up automatic backups</strong> of important files</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. SECURITY MINDSET 🧠 -->
+                <div class="section-header security-mindset">
+                    <h2 class="text-2xl font-bold text-gray-800">🧠 Your Security Mindset</h2>
+                    <p class="text-gray-600">Understanding your security habits and decision patterns</p>
+                </div>
+
+                <div class="simple-explanation">
+                    <h4 class="font-semibold mb-2">Why this matters:</h4>
+                    <p class="text-gray-700">Your online safety isn't just about technology - it's also about your habits and how you make decisions. Understanding these patterns helps you build better security habits.</p>
+                </div>
+
+                <div class="metric-card">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-green-50 rounded-lg">
+                            <h4 class="font-semibold text-green-700 mb-2">✅ Your Strengths</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Good at spotting scams</strong> - You're cautious with suspicious emails</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Watch your accounts</strong> - You notice when something seems wrong</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="p-4 bg-orange-50 rounded-lg">
+                            <h4 class="font-semibold text-orange-700 mb-2">🎯 Areas to Work On</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-orange-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Convenience over security</strong> - Sometimes choosing easy over safe</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-orange-500 mr-2 mt-0.5"></i>
+                                    <span><strong>Putting off updates</strong> - Delaying important security fixes</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. 30-DAY SECURITY UPGRADE 🚀 -->
+                <div class="section-header security-upgrade">
+                    <h2 class="text-2xl font-bold text-gray-800">🚀 Your 30-Day Security Upgrade</h2>
+                    <p class="text-gray-600">Simple steps to significantly improve your protection</p>
+                </div>
+
+                <div class="metric-card">
+                    <div class="space-y-4">
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h4 class="font-semibold text-blue-700 mb-2">Week 1: Essential Foundations</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>Download a password manager</strong> (like Bitwarden or LastPass) - it's free and easy</li>
+                                <li><strong>Update your computer and phone</strong> - look for "software update" in settings</li>
+                                <li><strong>Turn on two-factor authentication</strong> for your email</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-green-50 rounded-lg">
+                            <h4 class="font-semibold text-green-700 mb-2">Week 2-3: Building Better Habits</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>Install a free VPN</strong> for when you use public Wi-Fi</li>
+                                <li><strong>Review social media privacy</strong> - make sure only friends see your posts</li>
+                                <li><strong>Set up automatic backups</strong> - use Google Drive or iCloud</li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-purple-50 rounded-lg">
+                            <h4 class="font-semibold text-purple-700 mb-2">Week 4: Maintenance Mode</h4>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li><strong>Check for updates weekly</strong> - make it a Sunday routine</li>
+                                <li><strong>Review account security</strong> - quick check of your important accounts</li>
+                                <li><strong>Practice saying no</strong> to urgent-seeming requests online</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. AI COACH CONNECTION 🤖 -->
+                <div class="section-header ai-coach">
+                    <h2 class="text-2xl font-bold text-gray-800">🤖 Connect with Aura - Your AI Security Coach</h2>
+                    <p class="text-gray-600">Get personalized guidance to improve your cyber security</p>
+                </div>
+
+                <div class="ai-coach-card">
+                    <div class="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-robot text-pink-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Meet Aura, Your AI Security Coach</h3>
+                    <p class="text-gray-600 mb-4">Aura provides personalized, step-by-step guidance to help you implement the recommendations from this report.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="text-left">
+                            <h4 class="font-semibold text-pink-700 mb-2">What Aura Offers:</h4>
+                            <ul class="text-sm text-gray-700 space-y-1">
+                                <li>• Personalized security coaching</li>
+                                <li>• Step-by-step implementation guides</li>
+                                <li>• Regular progress check-ins</li>
+                                <li>• Answer security questions 24/7</li>
+                                <li>• Customized threat alerts</li>
+                            </ul>
+                        </div>
+                        <div class="text-left">
+                            <h4 class="font-semibold text-pink-700 mb-2">Benefits:</h4>
+                            <ul class="text-sm text-gray-700 space-y-1">
+                                <li>• No technical knowledge needed</li>
+                                <li>• Available anytime, anywhere</li>
+                                <li>• Completely personalized to you</li>
+                                <li>• Free basic coaching available</li>
+                                <li>• Premium options for advanced needs</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button class="btn btn-ai">
+                            <i class="fas fa-robot mr-2"></i> Start Free Coaching Session
+                        </button>
+                        <button class="btn" style="background: #e5e7eb; color: #374151;">
+                            <i class="fas fa-info-circle mr-2"></i> Learn More About Aura
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RATING LEGEND -->
+                <div class="metric-card">
+                    <h3 class="font-semibold text-lg mb-4 text-center">Understanding Your Cyber Posture Ratings</h3>
+                    
+                    <div class="legend-grid">
+                        <div class="legend-item rating-excellent">
+                            <div class="text-lg font-semibold">Excellent</div>
+                            <p class="text-sm mt-1">You have strong, comprehensive protection against most threats</p>
+                        </div>
+                        <div class="legend-item rating-good">
+                            <div class="text-lg font-semibold">Good</div>
+                            <p class="text-sm mt-1">Solid protection with minor areas for improvement</p>
+                        </div>
+                        <div class="legend-item rating-fair">
+                            <div class="text-lg font-semibold">Fair</div>
+                            <p class="text-sm mt-1">Basic protection but several important areas need attention</p>
+                        </div>
+                        <div class="legend-item rating-poor">
+                            <div class="text-lg font-semibold">Needs Urgent Attention</div>
+                            <p class="text-sm mt-1">Critical vulnerabilities that require immediate action</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-sm text-gray-600">Your overall rating is based on multiple factors including password security, software updates, scam detection, and behavioral patterns.</p>
+                    </div>
+                </div>
+
+                <!-- Report Footer -->
+                <div class="text-center mt-8 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm">Remember: Good security is about building habits, not being perfect. Every small step makes you safer.</p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-download mr-2"></i> Save This Report
+                        </button>
+                        <button class="btn btn-ai">
+                            <i class="fas fa-robot mr-2"></i> Connect with Aura Coach
+                        </button>
+                        <button class="btn" style="background: #e5e7eb; color: #374151;">
+                            <i class="fas fa-redo mr-2"></i> Retake Assessment in 30 Days
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Sample report data
+        const reportData = {
+            overallRating: 'fair', // excellent, good, fair, poor
+            generatedDate: new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            })
+        };
+
+        // Initialize report with data
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('report-date').textContent = reportData.generatedDate;
+            
+            // Set overall rating
+            const ratingElement = document.getElementById('overall-rating');
+            const ratings = {
+                'excellent': { class: 'rating-excellent', text: 'Excellent Cyber Posture' },
+                'good': { class: 'rating-good', text: 'Good Cyber Posture' },
+                'fair': { class: 'rating-fair', text: 'Fair Cyber Posture' },
+                'poor': { class: 'rating-poor', text: 'Needs Urgent Attention' }
+            };
+            
+            const currentRating = ratings[reportData.overallRating];
+            ratingElement.className = `rating-badge ${currentRating.class}`;
+            ratingElement.innerHTML = `<i class="fas fa-shield-alt mr-2"></i>${currentRating.text}`;
+        });
+
+        // AI Coach connection functionality
+        document.querySelectorAll('.btn-ai, [class*="ai-coach"] button').forEach(button => {
+            button.addEventListener('click', function() {
+                // In a real app, this would connect to the AI coach service
+                alert('Connecting you to Aura, your AI Security Coach...\n\nAura will provide personalized guidance based on your assessment results. You can ask questions, get step-by-step help, and receive regular security tips tailored to your needs.');
+            });
+        });
+    </script>
+</body>
+</html>
